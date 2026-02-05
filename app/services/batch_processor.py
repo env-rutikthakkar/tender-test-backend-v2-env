@@ -35,7 +35,18 @@ MICRO_SUMMARY_PROMPT = """You are a tender extraction specialist. Extract ALL im
 - IDs, Titles, Dates (Start, End, Opening), Validity
 - Fees (EMD, Tender Fee), Security, Payments
 - Eligibility (MSE, Startup, Turnover, Experience)
-- Scope, Location, Duration, Documents
+- Scope, Location, Duration
+
+**FOR DOCUMENTS (GeM tenders ONLY):**
+Extract documents from the pre-qualification table "विक्रेता से मांगे गए दस्तावेज़/Document required from seller" section only - NOT from ATC sections.
+
+**GeM PORTAL PRE-QUALIFICATION REQUIREMENT (if applicable):**
+- Minimum Average Annual Turnover (For 3 Years) - look for "बिडर का न्यूनतम औसत वार्षिक टर्नओवर" - extract EXACT value like "45 Lakh (s)"
+- OEM Average Turnover (Last 3 Years) - look for "मूल उपकरण निर्माता का औसत टर्नओवर" - extract EXACT value
+- Years of Past Experience Required - look for "समान सेवा के लिए अपेक्षित विगत अनुभव के वर्ष" - extract EXACT value like "3 Year (s)"
+- MSE Exemption - look for "एमएसएमई को छूट", values: "Yes" or "No"
+- Startup Exemption - look for "स्टार्टअप के लिए छूट", values: "Yes" or "No"
+- Document required from seller - look for "विक्रेता से मांगे गए दस्तावेज़" - COPY ENTIRE TEXT EXACTLY
 
 **INSTRUCTIONS:**
 - Extract EXACT values/dates as they appear.
@@ -87,6 +98,24 @@ FINAL_STRUCTURED_PROMPT = """You are an expert tender analyst. Create a comprehe
 - ✅ **department** - Search for: "department", "ministry", "organization", "issued by"
 - ✅ **turnover_requirement** - Search for: "turnover", "financial capacity", "annual turnover", "average turnover"
 - ✅ **experience_required** - Search for: "experience", "similar work", "past projects", "completed projects"
+
+**GeM PORTAL PRE-QUALIFICATION REQUIREMENT (ONLY if portal is "GeM"):**
+If this tender is from GeM (Government e-Marketplace), populate `pre_qualification_requirement` as a SINGLE FORMATTED STRING containing ALL pre-qualification info EXACTLY as it appears in the document:
+
+Format it as:
+"Minimum Average Annual Turnover: [value] | OEM Average Turnover: [value] | Years of Experience Required: [value] | MSE Exemption: [value] | Startup Exemption: [value] | Documents Required from Seller: [exact full text from PDF including asterisk notes]"
+
+**CRITICAL - Documents Required from Seller:**
+Look for the table row "विक्रेता से मांगे गए दस्तावेज़/Document required from seller" and copy the ENTIRE content including:
+- All document names: "Experience Criteria,Past Performance,Bidder Turnover,Certificate (Requested in ATC),OEM Authorization Certificate,OEM Annual Turnover,Compliance of BoQ specification and supporting document"
+- AND the asterisk note: "*In case any bidder is seeking exemption from Experience / Turnover Criteria, the supporting documents to prove his eligibility for exemption must be uploaded for evaluation by the buyer"
+
+**IMPORTANT:**
+- Extract EXACT values as they appear in PDF (e.g., "45 Lakh (s)", "3 Year (s)", "No", "Yes")
+- For "Documents Required from Seller" - copy the COMPLETE text EXACTLY including the asterisk (*) note
+- Do NOT summarize, rephrase, or modify ANY values - use exact text from document
+
+**NOTE:** For non-GeM portals, leave `pre_qualification_requirement` as empty string "".
 
 **EXTRACTION RULES:**
 1. Use EXACT values from the context below - don't invent or assume

@@ -95,21 +95,32 @@ Look for ALL dates including:
 - Overall project duration
 
 ### 4. ELIGIBILITY REQUIREMENTS
-Look for:
-- Who can bid (MSMEs, Startups, Class I/II suppliers, specific categories)
-- Minimum years in business
-- Past experience requirements (years, number of projects, value)
-- Similar work/contract requirements
-- Turnover requirements (annual, average over years)
-- Technical capability requirements
-- Specific licenses or certifications needed
-- Registration requirements
-- Past performance criteria
-- Local content/Make in India requirements
-- MSME/Startup special provisions or exemptions
-- Consortium or JV allowed (Yes/No and conditions)
-- International bidders allowed (Yes/No)
-- Any industry-specific requirements
+**CRITICAL: EXTRACT EVERY SINGLE ELIGIBILITY CLAUSE.**
+Eligibility information is often scattered. You must aggregate data from:
+1. "Notice Inviting Tender" (NIT)
+2. "Instructions to Bidders" (ITB)
+3. "Technical Capabilities" / "Financial Capabilities"
+4. "Qualifying Requirements" (QR)
+
+**1. TECHNICAL ELIGIBILITY (Credentials)**
+- Extract EXACT "similar work" definitions.
+- Capture ALL percentage requirements (e.g., "One work of 80%", "Two works of 50%", "Three works of 40%").
+- Look for timeframes (e.g., "completed in last 5 years").
+
+**2. FINANCIAL ELIGIBILITY**
+- Extract specific "Average Annual Turnover" amounts.
+- Look for "Solvency Certificate" or "Net Worth" mandates.
+
+**3. LEGAL & OTHER ELIGIBILITY**
+- Valid Trade License, GST, PAN, Professional Tax.
+- Specific licenses (Electrical Contractor, PWD Registration).
+- "Blacklisting" affidavit requirements.
+
+**INSTRUCTION:**
+- **Capture Complex Logic**: If eligibility has multiple scenarios (e.g., different criteria for different calls, categories, "OR" conditions, or tiered options), extract ALL of them to provide a complete picture.
+- **Identify Exclusions**: Specifically look for and extract statements about what is explicitly NOT accepted or what counts as disqualification (e.g., "Certificate X is not valid").
+- **Full Context**: Do not rely on the first summary you find. Cross-reference "Notice Inviting Tender" with detailed sections like "Instruction to Bidders" or Annexures to ensure the most detailed criteria are captured.
+- **Verbatim Extraction**: Use the exact wording from the document for critical clauses to avoid interpretation errors.
 
 ### 5. FINANCIAL REQUIREMENTS
 Look for:
@@ -122,10 +133,27 @@ Look for:
 - Advance payment provisions
 - Mobilization advance
 - Price escalation clauses
+
 - Any other financial commitments
+- **Refund of EMD**: Search for "Refund of EMD", "Return of EMD", "Release of Security". Include the process/conditions for refund.
 
 ### 6. DOCUMENTS REQUIRED
-Extract COMPLETE list of all documents mentioned:
+Extract COMPLETE list of all documents mentioned - use EXACT TEXT as it appears in the PDF.
+
+**FOR GeM PORTAL TENDERS:**
+Use ONLY the documents from the pre-qualification table row "विक्रेता से मांगे गए दस्तावेज़/Document required from seller":
+- "Experience Criteria"
+- "Past Performance"
+- "Bidder Turnover"
+- "Certificate (Requested in ATC)"
+- "OEM Authorization Certificate"
+- "OEM Annual Turnover"
+- "Compliance of BoQ specification and supporting document"
+
+Do NOT include documents from ATC (Additional Terms & Conditions) or other sections for GeM tenders.
+
+**FOR NON-GeM TENDERS:**
+Extract documents from all relevant sections:
 - Certificates (GST, PAN, Incorporation, etc.)
 - Registrations (MSME, Professional, etc.)
 - Financial documents (Turnover certificates, audited statements, bank solvency)
@@ -134,6 +162,16 @@ Extract COMPLETE list of all documents mentioned:
 - Compliance declarations
 - Undertakings
 - Any other documents specified
+
+**CRITICAL FOR CPPP/STATE TENDERS (Technical Proposal):**
+Look specifically for sections labeled:
+- "Technical Proposal"
+- "Statutory Cover" / "Technical Cover"
+- "Non-Statutory Cover" / "My Documents"
+- "Standard Forms"
+Extract ALL documents listed under these headers.
+
+**IMPORTANT:** Copy document names EXACTLY as written in the tender document. Do NOT rephrase or summarize.
 
 ### 7. LEGAL & RISK CLAUSES
 Look for:
@@ -167,6 +205,41 @@ Extract anything else important:
 - Anti-corruption clauses
 - Intellectual property terms
 - Any other critical information that vendors need to know
+
+### 10. GeM PORTAL PRE-QUALIFICATION REQUIREMENT (ONLY FOR GeM TENDERS)
+**IMPORTANT:** If this is a GeM (Government e-Marketplace) portal tender, you MUST extract ALL pre-qualification requirements into a SINGLE FORMATTED STRING in the `pre_qualification_requirement` field.
+
+These are typically found in a table format with both Hindi and English labels. Look for:
+- **Minimum Average Annual Turnover (For 3 Years)** - बिडर का न्यूनतम औसत वार्षिक टर्नओवर (e.g., "45 Lakh (s)")
+- **OEM Average Turnover (Last 3 Years)** - मूल उपकरण निर्माता का औसत टर्नओवर (e.g., "200 Lakh (s)")
+- **Years of Past Experience Required** - उन्हीं/समान सेवा के लिए अपेक्षित विगत अनुभव के वर्ष (e.g., "3 Year (s)")
+- **MSE Exemption for Years of Experience and Turnover** - एमएसएमई के लिए अनुभव के वर्षों और टर्नओवर से छूट (e.g., "Yes" or "No")
+- **Startup Exemption for Years of Experience and Turnover** - स्टार्टअप के लिए अनुभव के वर्षों और टर्नओवर से छूट (e.g., "Yes" or "No")
+- **Document required from seller** - विक्रेता से मांगे गए दस्तावेज़ (COPY EXACT FULL TEXT AS IS)
+
+**OUTPUT FORMAT for pre_qualification_requirement:**
+"Minimum Average Annual Turnover: 45 Lakh (s) | OEM Average Turnover: 200 Lakh (s) | Years of Experience Required: 3 Year (s) | MSE Exemption: No | Startup Exemption: No | Documents Required from Seller: Experience Criteria,Past Performance,Bidder Turnover,Certificate (Requested in ATC),OEM Authorization Certificate,OEM Annual Turnover,Compliance of BoQ specification and supporting document *In case any bidder is seeking exemption from Experience / Turnover Criteria, the supporting documents to prove his eligibility for exemption must be uploaded for evaluation by the buyer"
+
+**CRITICAL - "Documents Required from Seller" Field:**
+Look for the table row labeled "विक्रेता से मांगे गए दस्तावेज़/Document required from seller" and copy EVERYTHING:
+1. The document list: "Experience Criteria,Past Performance,Bidder Turnover,Certificate (Requested in ATC),OEM Authorization Certificate,OEM Annual Turnover,Compliance of BoQ specification and supporting document"
+2. PLUS the asterisk note that follows: "*In case any bidder is seeking exemption from Experience / Turnover Criteria, the supporting documents to prove his eligibility for exemption must be uploaded for evaluation by the buyer"
+
+**CRITICAL RULES:**
+1. Extract EXACT values as they appear in PDF - do NOT modify, rephrase, or summarize
+2. For "Documents Required from Seller" - copy the COMPLETE text EXACTLY including the asterisk (*) note at the end
+3. Use " | " as separator between fields
+4. For non-GeM portals, leave `pre_qualification_requirement` as empty string ""
+
+**FOR documents_required ARRAY (GeM Tenders):**
+For GeM tenders, the `documents_required` array should contain the SAME documents listed in the pre-qualification "Document required from seller" section. Extract each document as a separate array item:
+- "Experience Criteria"
+- "Past Performance"
+- "Bidder Turnover"
+- "Certificate (Requested in ATC)"
+- "OEM Authorization Certificate"
+- "OEM Annual Turnover"
+- "Compliance of BoQ specification and supporting document"
 
 ====================
 PRE-EXTRACTED DATA

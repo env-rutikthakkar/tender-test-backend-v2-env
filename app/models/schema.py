@@ -5,7 +5,7 @@ DO NOT CHANGE without updating dependent systems
 
 import json
 from pydantic import BaseModel, Field, field_validator
-from typing import List, Optional, Any, Union
+from typing import List, Any
 from datetime import datetime
 
 
@@ -89,7 +89,8 @@ TENDER_SCHEMA = {
         "contact_information": "",
         "clarification_process": "",
         "other_critical_info": ""
-    }
+    },
+    "pre_qualification_requirement": ""
 }
 
 
@@ -250,6 +251,12 @@ class TenderSummary(BaseModel):
     legal_and_risk_clauses: LegalAndRiskClauses
     vendor_decision_hint: VendorDecisionHint
     additional_important_information: AdditionalInformation
+    pre_qualification_requirement: str = Field(default="", description="GeM Portal specific pre-qualification requirement as single formatted string - only for GeM tenders")
+
+    @field_validator("pre_qualification_requirement", mode="before")
+    @classmethod
+    def coerce_prequalification(cls, v: Any) -> str:
+        return coerce_to_string(v)
 
     @field_validator("documents_required", mode="before")
     @classmethod
