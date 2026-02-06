@@ -73,6 +73,7 @@ Look for:
 - **Contact Details**: Extract "Tel", "Fax", "Email" associated with the organization address.
 - **Tender Document Date**: specific date mentioned with "Dated:" or next to "NIT No".
 - **Submission Instructions**: Extract rules for bid submission, such as address for offline hardcopies, mandatory envelope labeling (e.g., "DO NOT OPEN BEFORE"), and any specific physical submission deadlines (Section 1.1/1.2).
+- **Type of Bid**: Search for "Type of Bid" (e.g., "Two Packet Bid", "Single Packet Bid").
 
 **WARNING ON TENDER ID:** Never pick common words like "shall", "be", "the", or "this" as the Tender ID. Search for patterns like "XXX/YYY/ZZZ/123", "NIT No. 456", or "Bid Number: GEM/202X/B/XXX".
 
@@ -233,12 +234,22 @@ Extract anything else important:
 - Anti-corruption clauses
 - Intellectual property terms
 - Any other critical information that vendors need to know
+- **Buyer Added Bid Specific Terms and Condition (ATC)**: Search for "Buyer Added Bid Specific Terms and Conditions" or "ATC".
+- **Time allowed for Technical Clarifications during technical evaluation**: Search for this exact phrase or "Technical Clarification Time".
 
 ### 10. EXECUTIVE SUMMARY
 Provide a brief (3-4 sentences) high-level overview of the entire tender, covering the what, where, and who, to give the vendor an immediate understanding of the project.
 
 ### 10. GeM PORTAL PRE-QUALIFICATION REQUIREMENT (ONLY FOR GeM TENDERS)
-**IMPORTANT:** If this is a GeM (Government e-Marketplace) portal tender, you MUST extract ALL pre-qualification requirements into a SINGLE FORMATTED STRING in the `pre_qualification_requirement` field.
+**CRITICAL:** If this is a GeM (Government e-Marketplace) portal tender, prioritize the extraction from the **First Page Table** containing Hindi and English labels. This table takes precedence over all other text for the following fields:
+1. Minimum Average Annual Turnover of the bidder
+2. OEM Average Turnover
+3. Years of Past Experience Required for same/similar service
+4. MSE Relaxation for Years Of Experience and Turnover
+5. Startup Relaxation for Years Of Experience and Turnover
+6. Document required from seller
+
+You MUST extract ALL pre-qualification requirements into a SINGLE FORMATTED STRING in the `pre_qualification_requirement` field.
 
 These are typically found in a table format with both Hindi and English labels. Look for:
 - **Minimum Average Annual Turnover (For 3 Years)** - बिडर का न्यूनतम औसत वार्षिक टर्नओवर (e.g., "45 Lakh (s)")
@@ -249,7 +260,7 @@ These are typically found in a table format with both Hindi and English labels. 
 - **Document required from seller** - विक्रेता से मांगे गए दस्तावेज़ (COPY EXACT FULL TEXT AS IS)
 
 **OUTPUT FORMAT for pre_qualification_requirement:**
-"Minimum Average Annual Turnover: 45 Lakh (s) | OEM Average Turnover: 200 Lakh (s) | Years of Experience Required: 3 Year (s) | MSE Exemption: No | Startup Exemption: No | Documents Required from Seller: Experience Criteria,Past Performance,Bidder Turnover,Certificate (Requested in ATC),OEM Authorization Certificate,OEM Annual Turnover,Compliance of BoQ specification and supporting document *In case any bidder is seeking exemption from Experience / Turnover Criteria, the supporting documents to prove his eligibility for exemption must be uploaded for evaluation by the buyer"
+"Minimum Average Annual Turnover: [Value] | OEM Average Turnover: [Value] | Years of Experience Required: [Value] | MSE Exemption: [Yes/No] | Startup Exemption: [Yes/No] | Documents Required from Seller: [Doc List] *Note"
 
 **CRITICAL - "Documents Required from Seller" Field:**
 Look for the table row labeled "विक्रेता से मांगे गए दस्तावेज़/Document required from seller" and copy EVERYTHING:

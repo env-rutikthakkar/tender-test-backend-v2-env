@@ -118,6 +118,9 @@ FINAL_STRUCTURED_PROMPT = """You are an expert tender analyst. Create a comprehe
 - ✅ **date_and_time_of_issue** - Search for exact label "Date & time of issue".
 - ✅ **due_date_and_time_of_submission** - Search for exact label "Due Date & time of Submission".
 - ✅ **liquidated_damages** - Extract the formula (e.g., "2% per week up to 10%").
+- ✅ **type_of_bid** - Search for "Type of Bid" (GeM).
+- ✅ **technical_clarification_time** - Search for "Time allowed for Technical Clarifications during technical evaluation".
+- ✅ **buyer_added_atc** - Search for "Buyer Added Bid Specific Terms and Conditions" or "ATC".
 
 **ELIGIBILITY INSTRUCTIONS:**
 - **Capture Complex Logic**: Extract multiple scenarios (e.g., "For 1st Call", "Option A OR Option B").

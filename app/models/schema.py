@@ -26,7 +26,8 @@ TENDER_SCHEMA = {
         "organization_email": "",
         "organization_fax": "",
         "tender_document_date": "",
-        "submission_instructions": ""
+        "submission_instructions": "",
+        "type_of_bid": ""
     },
     "scope_of_work": {
         "description": "",
@@ -103,6 +104,8 @@ TENDER_SCHEMA = {
         "contact_information": "",
         "clarification_process": "",
         "detailed_evaluation_scoring_criteria": "",
+        "buyer_added_atc": "",
+        "technical_clarification_time": "",
         "other_critical_info": ""
     },
     "pre_qualification_requirement": "",
@@ -146,6 +149,7 @@ class TenderMeta(BaseTenderModel):
     organization_fax: str = Field(default="", description="Fax number of the organization")
     tender_document_date: str = Field(default="", description="Date mentioned on the tender document (e.g. Dated: DD/MM/YYYY)")
     submission_instructions: str = Field(default="", description="Specific instructions for bid submission (e.g., envelope labels, offline address)")
+    type_of_bid: str = Field(default="", description="Type of bid (e.g., Single Packet, Two Packet)")
 
     @field_validator("*", mode="before")
     @classmethod
@@ -261,6 +265,8 @@ class AdditionalInformation(BaseTenderModel):
     contact_information: str = Field(default="")
     clarification_process: str = Field(default="")
     detailed_evaluation_scoring_criteria: str = Field(default="", description="Detailed points from Evaluation/Scoring criteria section")
+    buyer_added_atc: str = Field(default="", description="Buyer Added Bid Specific Terms and Conditions (ATC)")
+    technical_clarification_time: str = Field(default="", description="Time allowed for Technical Clarifications during technical evaluation")
     other_critical_info: str = Field(default="")
 
     @field_validator("*", mode="before")
