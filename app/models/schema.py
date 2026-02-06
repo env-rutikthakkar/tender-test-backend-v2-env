@@ -46,7 +46,9 @@ TENDER_SCHEMA = {
         "financial_bid_opening": "",
         "contract_start": "",
         "bid_validity": "",
-        "project_duration": ""
+        "project_duration": "",
+        "date_and_time_of_issue": "",
+        "due_date_and_time_of_submission": ""
     },
     "eligibility_snapshot": {
         "who_can_bid": "",
@@ -176,6 +178,8 @@ class KeyDates(BaseTenderModel):
     contract_start: str = Field(default="")
     bid_validity: str = Field(default="")
     project_duration: str = Field(default="")
+    date_and_time_of_issue: str = Field(default="", description="Exact label from CPPP tenders: 'Date & time of issue'")
+    due_date_and_time_of_submission: str = Field(default="", description="Exact label from CPPP tenders: 'Due Date & time of Submission'")
 
     @field_validator("*", mode="before")
     @classmethod

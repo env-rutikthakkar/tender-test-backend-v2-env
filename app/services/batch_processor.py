@@ -115,6 +115,9 @@ FINAL_STRUCTURED_PROMPT = """You are an expert tender analyst. Create a comprehe
 - ✅ **detailed_evaluation_scoring_criteria** - Search for: "6.3 Evaluation/ Scoring criteria", "Evaluation Criteria", "Weightage", "Scoring System"
 - ✅ **executive_summary** - Summarize the whole project in 3-4 sentences.
 - ✅ **submission_instructions** - Search for offline submission address, envelope labels, physical filing rules.
+- ✅ **date_and_time_of_issue** - Search for exact label "Date & time of issue".
+- ✅ **due_date_and_time_of_submission** - Search for exact label "Due Date & time of Submission".
+- ✅ **liquidated_damages** - Extract the formula (e.g., "2% per week up to 10%").
 
 **ELIGIBILITY INSTRUCTIONS:**
 - **Capture Complex Logic**: Extract multiple scenarios (e.g., "For 1st Call", "Option A OR Option B").

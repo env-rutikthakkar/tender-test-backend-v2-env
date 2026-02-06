@@ -99,6 +99,8 @@ Look for ALL dates including:
 - Expected contract award date
 - Contract start date
 - Overall project duration
+- **Date & time of issue**: Search for this exact table row label.
+- **Due Date & time of Submission**: Search for this exact table row label.
 
 ### 4. ELIGIBILITY REQUIREMENTS
 **CRITICAL: EXTRACT EVERY SINGLE ELIGIBILITY CLAUSE.**
@@ -197,7 +199,7 @@ Look for:
 - Blacklisting/debarment clause
 - Arbitration clause (jurisdiction, process)
 - Mediation provisions
-- Liquidated damages/penalty clauses
+- Liquidated damages/penalty clauses: Extract the **formula** if provided (e.g., "2% of the value of work per week up to a maximum of 10%").
 - Force majeure provisions
 - Contract termination conditions
 - Warranty/guarantee period

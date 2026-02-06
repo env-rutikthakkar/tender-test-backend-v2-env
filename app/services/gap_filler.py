@@ -16,7 +16,8 @@ CRITICAL_FIELDS = {
         "bid_end", "bid_start", "publication_date", "bid_validity",
         "pre_bid_meeting_date", "pre_bid_meeting_location",
         "technical_bid_opening", "financial_bid_opening",
-        "contract_start", "project_duration"
+        "contract_start", "project_duration",
+        "date_and_time_of_issue", "due_date_and_time_of_submission"
     ],
     "financial_requirements": [
         "emd", "tender_fee", "performance_security",
@@ -40,7 +41,7 @@ CRITICAL_FIELDS = {
         "duration", "technical_specifications"
     ],
     "legal_and_risk_clauses": [
-        "rejection_of_bid", "splitting_of_work"
+        "rejection_of_bid", "splitting_of_work", "liquidated_damages"
     ],
     "additional_important_information": [
         "detailed_evaluation_scoring_criteria"
