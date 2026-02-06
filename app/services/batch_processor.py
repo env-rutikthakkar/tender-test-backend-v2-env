@@ -34,8 +34,12 @@ MICRO_SUMMARY_PROMPT = """You are a tender extraction specialist. Extract ALL im
 **CRITICAL FIELDS TO FIND:**
 - IDs, Titles, Dates (Start, End, Opening), Validity
 - Fees (EMD, Tender Fee), Security, Payments
-- Eligibility (MSE, Startup, Turnover, Experience)
+- Eligibility (MSE, Startup, Turnover, Experience, Credentials)
 - Scope, Location, Duration
+- **Organization Address**, Tel, Fax, Email
+- **Rejection of Bid** & **Disqualification Criteria**
+- **Offline Submissions** (Hardcopy) & **Online Submissions** (Scanned)
+- **Minimum Requirements at Bidder's End** (Infrastructure)
 
 **FOR DOCUMENTS (GeM tenders ONLY):**
 Extract documents from the pre-qualification table "विक्रेता से मांगे गए दस्तावेज़/Document required from seller" section only - NOT from ATC sections.
@@ -98,6 +102,23 @@ FINAL_STRUCTURED_PROMPT = """You are an expert tender analyst. Create a comprehe
 - ✅ **department** - Search for: "department", "ministry", "organization", "issued by"
 - ✅ **turnover_requirement** - Search for: "turnover", "financial capacity", "annual turnover", "average turnover"
 - ✅ **experience_required** - Search for: "experience", "similar work", "past projects", "completed projects"
+- ✅ **organization_address** - Search for: "Corporate Office", "Registered Office", "Headquarters"
+- ✅ **organization_telephone** - Search for: "Tel", "Phone", "Contact No" near address
+- ✅ **organization_fax** - Search for: "Fax", "Facsimile" near address
+- ✅ **tender_document_date** - Search for: "Dated:", "NIT Date"
+
+**ELIGIBILITY INSTRUCTIONS:**
+- **Capture Complex Logic**: Extract multiple scenarios (e.g., "For 1st Call", "Option A OR Option B").
+- **Identify Exclusions**: Note what is NOT accepted (e.g., "Payment certificate will not be treated as credential").
+- **Bidder Infrastructure**: Look for "Minimum Requirements at Bidder's End" (Computer, DSC, etc.).
+
+**LEGAL & REJECTION INSTRUCTIONS:**
+- **Rejection of Bid**: Search for "Acceptance/Rejection of bids", "Disqualification", "Bids liable for rejection". Include "Right to reject without assigning reason" and "Right to split work" clauses.
+
+**DOCUMENT EXTRACTION INSTRUCTIONS:**
+- **offline_submission_documents**: Extract items listed under "Offline Submissions" (Hardcopy/Physical).
+- **online_submission_documents**: Extract items listed under "Online Submissions" (Scanned/PDF).
+- **documents_required**: Consolidated list of ALL documents.
 
 **GeM PORTAL PRE-QUALIFICATION REQUIREMENT (ONLY if portal is "GeM"):**
 If this tender is from GeM (Government e-Marketplace), populate `pre_qualification_requirement` as a SINGLE FORMATTED STRING containing ALL pre-qualification info EXACTLY as it appears in the document:

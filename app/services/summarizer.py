@@ -121,8 +121,7 @@ async def process_tender_multi_file(pdf_files: List[UploadFile]) -> dict:
             "processing_pipeline": "unified-multi-pass",
             "files_processed": [d["filename"] for d in all_docs],
             "total_tokens": tokens,
-            "fields_filled": filled,
-            "final_missing_count": get_missing_field_summary(summary)['total_missing']
+            "fields_filled": filled
         }
         return clean_empty_fields(summary)
     except Exception as e:

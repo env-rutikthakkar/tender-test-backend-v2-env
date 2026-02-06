@@ -20,7 +20,13 @@ TENDER_SCHEMA = {
         "country": "",
         "state": "",
         "funded_project": "",
-        "funding_agency": ""
+        "funded_project": "",
+        "funding_agency": "",
+        "organization_address": "",
+        "organization_telephone": "",
+        "organization_email": "",
+        "organization_fax": "",
+        "tender_document_date": ""
     },
     "scope_of_work": {
         "description": "",
@@ -52,7 +58,9 @@ TENDER_SCHEMA = {
         "consortium_or_jv_allowed": "",
         "international_bidders_allowed": "",
         "specific_licenses_required": "",
-        "past_performance_requirement": ""
+        "specific_licenses_required": "",
+        "past_performance_requirement": "",
+        "bidder_technical_infrastructure": ""
     },
     "financial_requirements": {
         "emd": "",
@@ -65,6 +73,8 @@ TENDER_SCHEMA = {
         "mobilization_advance": ""
     },
     "documents_required": [],
+    "online_submission_documents": [],
+    "offline_submission_documents": [],
     "legal_and_risk_clauses": {
         "blacklisting_clause": "",
         "arbitration_clause": "",
@@ -73,7 +83,8 @@ TENDER_SCHEMA = {
         "force_majeure": "",
         "termination_clause": "",
         "warranty_period": "",
-        "special_restrictions": ""
+        "special_restrictions": "",
+        "rejection_of_bid": ""
     },
     "vendor_decision_hint": {
         "eligible_if": "",
@@ -122,8 +133,13 @@ class TenderMeta(BaseTenderModel):
     issuing_authority: str = Field(default="")
     country: str = Field(default="")
     state: str = Field(default="")
-    funded_project: str = Field(default="")
-    funding_agency: str = Field(default="")
+    funded_project: str = Field(default="", description="Name of the funded project if applicable")
+    funding_agency: str = Field(default="", description="Name of the agency funding the project")
+    organization_address: str = Field(default="", description="Address of the issuing organization (Corporate/Registered Office)")
+    organization_telephone: str = Field(default="", description="Telephone number of the organization")
+    organization_email: str = Field(default="", description="Email address of the organization")
+    organization_fax: str = Field(default="", description="Fax number of the organization")
+    tender_document_date: str = Field(default="", description="Date mentioned on the tender document (e.g. Dated: DD/MM/YYYY)")
 
     @field_validator("*", mode="before")
     @classmethod
@@ -174,6 +190,7 @@ class EligibilitySnapshot(BaseTenderModel):
     international_bidders_allowed: str = Field(default="")
     specific_licenses_required: str = Field(default="")
     past_performance_requirement: str = Field(default="")
+    bidder_technical_infrastructure: str = Field(default="", description="Minimum technical infrastructure required at bidder's end (e.g., Computer, Broadband, DSC)")
 
     @field_validator("*", mode="before")
     @classmethod
@@ -206,6 +223,7 @@ class LegalAndRiskClauses(BaseTenderModel):
     termination_clause: str = Field(default="")
     warranty_period: str = Field(default="")
     special_restrictions: str = Field(default="")
+    rejection_of_bid: str = Field(default="", description="Conditions for rejection of bid")
 
     @field_validator("*", mode="before")
     @classmethod
@@ -248,6 +266,8 @@ class TenderSummary(BaseModel):
     eligibility_snapshot: EligibilitySnapshot
     financial_requirements: FinancialRequirements
     documents_required: List[str] = Field(default_factory=list)
+    online_submission_documents: List[str] = Field(default_factory=list, description="Documents to be submitted ONLINE (scanned/pdf)")
+    offline_submission_documents: List[str] = Field(default_factory=list, description="Documents to be submitted OFFLINE (physical/hardcopy)")
     legal_and_risk_clauses: LegalAndRiskClauses
     vendor_decision_hint: VendorDecisionHint
     additional_important_information: AdditionalInformation
@@ -258,9 +278,9 @@ class TenderSummary(BaseModel):
     def coerce_prequalification(cls, v: Any) -> str:
         return coerce_to_string(v)
 
-    @field_validator("documents_required", mode="before")
+    @field_validator("documents_required", "online_submission_documents", "offline_submission_documents", mode="before")
     @classmethod
-    def validate_docs(cls, v: Any) -> List[str]:
+    def coerce_documents_required(cls, v: Any) -> List[str]:
         if isinstance(v, str):
             return [v]
         if isinstance(v, list):

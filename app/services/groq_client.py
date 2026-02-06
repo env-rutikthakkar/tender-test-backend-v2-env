@@ -66,11 +66,11 @@ async def call_groq(prompt: str, model: str = None, temp: float = 0.0) -> str:
     """Asynchronous Groq API call with rate limiting."""
     try:
         target = model or MODEL_NAME
-        await rate_limiter.wait_for_capacity(estimate_tokens(prompt))
         res = await async_client.chat.completions.create(
             model=target, temperature=temp, max_tokens=6000,
+            response_format={"type": "json_object"},
             messages=[
-                {"role": "system", "content": "You are a tender analyst. Output valid JSON only."},
+                {"role": "system", "content": "You are a tender analyst. Output valid JSON only. Escape all newlines and quotes within string values."},
                 {"role": "user", "content": prompt}
             ]
         )
@@ -89,13 +89,31 @@ async def call_groq_with_retry(prompt: str, model: str = None, retries: int = 5)
             await asyncio.sleep(wait if "429" not in str(e) else wait + 5)
 
 def validate_json_response(response: str) -> dict:
-    """Clean and parse JSON from LLM response."""
+    """Clean and parse JSON from LLM response with fallback for common errors."""
     try:
-        clean = response
-        for m in ["```json", "```"]:
-            if m in clean:
-                clean = clean[clean.find(m)+len(m):clean.rfind("```")].strip()
-                break
+        clean = response.strip()
+        # Handle markdown code blocks
+        if "```json" in clean:
+            clean = clean.split("```json")[1]
+            if "```" in clean:
+                clean = clean.split("```")[0]
+        elif "```" in clean:
+            clean = clean.split("```")[1]
+            if "```" in clean:
+                clean = clean.split("```")[0]
+
+        clean = clean.strip()
         return json.loads(clean)
+    except json.JSONDecodeError as e:
+        # Fallback: Try to escape unescaped control characters (newlines to \n)
+        try:
+            import re
+            # Replace literal newlines in strings with \n, but be careful not to break structure
+            # This is a naive heuristic: if we see a newline that is NOT followed by whitespace+quote or whitespace+brace, it might be inside a string
+            replaced = re.sub(r'(?<!\\)\n', r'\\n', clean)
+            return json.loads(replaced)
+        except:
+             pass
+        raise ValueError(f"Invalid JSON: {str(e)} | Context: {clean[:100]}...")
     except Exception as e:
         raise ValueError(f"Invalid JSON: {str(e)}")

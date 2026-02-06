@@ -69,6 +69,9 @@ Look for:
 - Country and State
 - Funded project name (if part of World Bank, ADB, or other funded project)
 - Funding agency details
+- **Organization Address**: Search for "Corporate Office", "Registered Office", "Headquarters". Extract the full address.
+- **Contact Details**: Extract "Tel", "Fax", "Email" associated with the organization address.
+- **Tender Document Date**: specific date mentioned with "Dated:" or next to "NIT No".
 
 ### 2. PROJECT SCOPE & DESCRIPTION
 Look for:
@@ -115,6 +118,7 @@ Eligibility information is often scattered. You must aggregate data from:
 - Valid Trade License, GST, PAN, Professional Tax.
 - Specific licenses (Electrical Contractor, PWD Registration).
 - "Blacklisting" affidavit requirements.
+- **Minimum Requirements at Bidder's End**: Search for "Minimum Requirements at Bidder's End", "Technical Infrastructure", "Digital Certificate", "Computer System".
 
 **INSTRUCTION:**
 - **Capture Complex Logic**: If eligibility has multiple scenarios (e.g., different criteria for different calls, categories, "OR" conditions, or tiered options), extract ALL of them to provide a complete picture.
@@ -164,14 +168,20 @@ Extract documents from all relevant sections:
 - Any other documents specified
 
 **CRITICAL FOR CPPP/STATE TENDERS (Technical Proposal):**
-Look specifically for sections labeled:
-- "Technical Proposal"
-- "Statutory Cover" / "Technical Cover"
-- "Non-Statutory Cover" / "My Documents"
-- "Standard Forms"
-Extract ALL documents listed under these headers.
+Look specifically for separate submission lists:
+1. **offline_submission_documents**:
+   - Extract explicitly listed **"Offline Submissions"** or hardcopy documents.
+   - Examples: "Power of Attorney", "Original Tender Fee", "EMD (Physical)", "Pass Phrase (in sealed envelope)".
 
-**IMPORTANT:** Copy document names EXACTLY as written in the tender document. Do NOT rephrase or summarize.
+2. **online_submission_documents**:
+   - Extract explicitly listed **"Online Submissions"** or scanned documents.
+   - Look for "Envelope-1", "Technical Bid", "Statutory/Non-Statutory Cover".
+   - Capture *every single row* from document tables (e.g., "Annual Average Turnover").
+
+3. **documents_required**:
+   - Combine ALL required documents here as a master list.
+
+**IMPORTANT:** Copy document names EXACTLY as written.
 
 ### 7. LEGAL & RISK CLAUSES
 Look for:
@@ -185,6 +195,9 @@ Look for:
 - Insurance requirements
 - Indemnity clauses
 - Special restrictions or conditions
+- Indemnity clauses
+- Special restrictions or conditions
+- **Rejection of Bid**: Search for "Acceptance/Rejection of bids", "Disqualification", "Bids liable for rejection". Include "Right to reject without assigning reason" and "Right to split work" clauses.
 
 ### 8. EVALUATION & SELECTION
 Look for:
