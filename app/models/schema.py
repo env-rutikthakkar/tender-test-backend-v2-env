@@ -277,17 +277,17 @@ class AdditionalInformation(BaseTenderModel):
 
 class TenderSummary(BaseModel):
     """Complete tender eligibility summary - Root Model"""
-    tender_meta: TenderMeta
-    scope_of_work: ScopeOfWork
-    key_dates: KeyDates
-    eligibility_snapshot: EligibilitySnapshot
-    financial_requirements: FinancialRequirements
+    tender_meta: TenderMeta = Field(default_factory=lambda: TenderMeta())
+    scope_of_work: ScopeOfWork = Field(default_factory=lambda: ScopeOfWork())
+    key_dates: KeyDates = Field(default_factory=lambda: KeyDates())
+    eligibility_snapshot: EligibilitySnapshot = Field(default_factory=lambda: EligibilitySnapshot())
+    financial_requirements: FinancialRequirements = Field(default_factory=lambda: FinancialRequirements())
     documents_required: List[str] = Field(default_factory=list)
     online_submission_documents: List[str] = Field(default_factory=list, description="Documents to be submitted ONLINE (scanned/pdf)")
     offline_submission_documents: List[str] = Field(default_factory=list, description="Documents to be submitted OFFLINE (physical/hardcopy)")
-    legal_and_risk_clauses: LegalAndRiskClauses
-    vendor_decision_hint: VendorDecisionHint
-    additional_important_information: AdditionalInformation
+    legal_and_risk_clauses: LegalAndRiskClauses = Field(default_factory=lambda: LegalAndRiskClauses())
+    vendor_decision_hint: VendorDecisionHint = Field(default_factory=lambda: VendorDecisionHint())
+    additional_important_information: AdditionalInformation = Field(default_factory=lambda: AdditionalInformation())
     pre_qualification_requirement: str = Field(default="", description="GeM Portal specific pre-qualification requirement as single formatted string - only for GeM tenders")
     executive_summary: str = Field(default="", description="Brief high-level summary of the entire tender")
 
