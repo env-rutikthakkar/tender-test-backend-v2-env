@@ -25,20 +25,28 @@ CRITICAL_FIELDS = {
     "tender_meta": [
         "tender_title", "portal", "department",
         "issuing_authority", "tender_id", "country", "state",
-        "organization_address", "tender_document_date"
+        "organization_address", "tender_document_date",
+        "submission_instructions"
     ],
     "eligibility_snapshot": [
         "turnover_requirement", "experience_required",
         "who_can_bid", "consortium_or_jv_allowed",
         "international_bidders_allowed",
-        "bidder_technical_infrastructure"
+        "bidder_technical_infrastructure",
+        "detailed_pre_qualification_criteria"
     ],
     "scope_of_work": [
         "description", "deliverables", "location",
         "duration", "technical_specifications"
     ],
     "legal_and_risk_clauses": [
-        "rejection_of_bid"
+        "rejection_of_bid", "splitting_of_work"
+    ],
+    "additional_important_information": [
+        "detailed_evaluation_scoring_criteria"
+    ],
+    "root": [
+        "executive_summary"
     ]
 }
 

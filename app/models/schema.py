@@ -20,13 +20,13 @@ TENDER_SCHEMA = {
         "country": "",
         "state": "",
         "funded_project": "",
-        "funded_project": "",
         "funding_agency": "",
         "organization_address": "",
         "organization_telephone": "",
         "organization_email": "",
         "organization_fax": "",
-        "tender_document_date": ""
+        "tender_document_date": "",
+        "submission_instructions": ""
     },
     "scope_of_work": {
         "description": "",
@@ -58,9 +58,9 @@ TENDER_SCHEMA = {
         "consortium_or_jv_allowed": "",
         "international_bidders_allowed": "",
         "specific_licenses_required": "",
-        "specific_licenses_required": "",
         "past_performance_requirement": "",
-        "bidder_technical_infrastructure": ""
+        "bidder_technical_infrastructure": "",
+        "detailed_pre_qualification_criteria": ""
     },
     "financial_requirements": {
         "emd": "",
@@ -84,7 +84,8 @@ TENDER_SCHEMA = {
         "termination_clause": "",
         "warranty_period": "",
         "special_restrictions": "",
-        "rejection_of_bid": ""
+        "rejection_of_bid": "",
+        "splitting_of_work": ""
     },
     "vendor_decision_hint": {
         "eligible_if": "",
@@ -99,9 +100,11 @@ TENDER_SCHEMA = {
         "special_conditions": "",
         "contact_information": "",
         "clarification_process": "",
+        "detailed_evaluation_scoring_criteria": "",
         "other_critical_info": ""
     },
-    "pre_qualification_requirement": ""
+    "pre_qualification_requirement": "",
+    "executive_summary": ""
 }
 
 
@@ -140,6 +143,7 @@ class TenderMeta(BaseTenderModel):
     organization_email: str = Field(default="", description="Email address of the organization")
     organization_fax: str = Field(default="", description="Fax number of the organization")
     tender_document_date: str = Field(default="", description="Date mentioned on the tender document (e.g. Dated: DD/MM/YYYY)")
+    submission_instructions: str = Field(default="", description="Specific instructions for bid submission (e.g., envelope labels, offline address)")
 
     @field_validator("*", mode="before")
     @classmethod
@@ -191,6 +195,7 @@ class EligibilitySnapshot(BaseTenderModel):
     specific_licenses_required: str = Field(default="")
     past_performance_requirement: str = Field(default="")
     bidder_technical_infrastructure: str = Field(default="", description="Minimum technical infrastructure required at bidder's end (e.g., Computer, Broadband, DSC)")
+    detailed_pre_qualification_criteria: str = Field(default="", description="Extended details from Pre-Qualification/Eligibility Criteria section")
 
     @field_validator("*", mode="before")
     @classmethod
@@ -223,7 +228,8 @@ class LegalAndRiskClauses(BaseTenderModel):
     termination_clause: str = Field(default="")
     warranty_period: str = Field(default="")
     special_restrictions: str = Field(default="")
-    rejection_of_bid: str = Field(default="", description="Conditions for rejection of bid")
+    rejection_of_bid: str = Field(default="", description="Conditions for rejection of bid (See Section 4.6)")
+    splitting_of_work: str = Field(default="", description="Whether the organization reserves the right to split the work among bidders")
 
     @field_validator("*", mode="before")
     @classmethod
@@ -250,6 +256,7 @@ class AdditionalInformation(BaseTenderModel):
     special_conditions: str = Field(default="")
     contact_information: str = Field(default="")
     clarification_process: str = Field(default="")
+    detailed_evaluation_scoring_criteria: str = Field(default="", description="Detailed points from Evaluation/Scoring criteria section")
     other_critical_info: str = Field(default="")
 
     @field_validator("*", mode="before")
@@ -272,6 +279,7 @@ class TenderSummary(BaseModel):
     vendor_decision_hint: VendorDecisionHint
     additional_important_information: AdditionalInformation
     pre_qualification_requirement: str = Field(default="", description="GeM Portal specific pre-qualification requirement as single formatted string - only for GeM tenders")
+    executive_summary: str = Field(default="", description="Brief high-level summary of the entire tender")
 
     @field_validator("pre_qualification_requirement", mode="before")
     @classmethod

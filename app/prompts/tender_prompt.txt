@@ -72,6 +72,9 @@ Look for:
 - **Organization Address**: Search for "Corporate Office", "Registered Office", "Headquarters". Extract the full address.
 - **Contact Details**: Extract "Tel", "Fax", "Email" associated with the organization address.
 - **Tender Document Date**: specific date mentioned with "Dated:" or next to "NIT No".
+- **Submission Instructions**: Extract rules for bid submission, such as address for offline hardcopies, mandatory envelope labeling (e.g., "DO NOT OPEN BEFORE"), and any specific physical submission deadlines (Section 1.1/1.2).
+
+**WARNING ON TENDER ID:** Never pick common words like "shall", "be", "the", or "this" as the Tender ID. Search for patterns like "XXX/YYY/ZZZ/123", "NIT No. 456", or "Bid Number: GEM/202X/B/XXX".
 
 ### 2. PROJECT SCOPE & DESCRIPTION
 Look for:
@@ -104,6 +107,9 @@ Eligibility information is often scattered. You must aggregate data from:
 2. "Instructions to Bidders" (ITB)
 3. "Technical Capabilities" / "Financial Capabilities"
 4. "Qualifying Requirements" (QR)
+5. Physical or table-based eligibility sections (often numbered like **"6.2"** or similar)
+
+**INSTRUCTION:** Extract EVERY detail from these sections. Do not summarize if the criteria are extensive; list them all. Use `detailed_pre_qualification_criteria` for extended narratives.
 
 **1. TECHNICAL ELIGIBILITY (Credentials)**
 - Extract EXACT "similar work" definitions.
@@ -180,6 +186,9 @@ Look specifically for separate submission lists:
 
 3. **documents_required**:
    - Combine ALL required documents here as a master list.
+   - For CPPP tenders, capture any **Envelope Tables** (e.g., Section 1.2 or similar) including document names like "Annual Average Turnover", "Non-Blacklisting Undertaking", etc.
+
+**IMPORTANT:** Copy document names EXACTLY as written.
 
 **IMPORTANT:** Copy document names EXACTLY as written.
 
@@ -197,16 +206,20 @@ Look for:
 - Special restrictions or conditions
 - Indemnity clauses
 - Special restrictions or conditions
-- **Rejection of Bid**: Search for "Acceptance/Rejection of bids", "Disqualification", "Bids liable for rejection". Include "Right to reject without assigning reason" and "Right to split work" clauses.
+- **Rejection of Bid**: Search for titles like "Acceptance/Rejection of bids", "Disqualification", "Bids liable for rejection" (often in Section 4.6 or similar). Include "Right to reject without assigning reason" clause.
+- **Splitting of Work**: Explicitly extract if the organization reserves the right to "split the work/Scope/Bid and/or offer in stages or in parts" (often in Section 4.6 or similar).
 
 ### 8. EVALUATION & SELECTION
 Look for:
+- Detailed scoring or weightage sections (often numbered like **"6.3"** or similar)
 - How bids will be evaluated
 - Evaluation criteria and weightage
 - Selection method (QCBS, QBS, LCS, single-stage, two-stage)
 - Price preference for specific categories
 - Technical and financial evaluation process
 - Qualification requirements
+
+**INSTRUCTION:** Detailed scoring systems, point weightages, and grading systems should be extracted fully into `detailed_evaluation_scoring_criteria`.
 
 ### 9. ADDITIONAL IMPORTANT INFORMATION
 Extract anything else important:
@@ -218,6 +231,9 @@ Extract anything else important:
 - Anti-corruption clauses
 - Intellectual property terms
 - Any other critical information that vendors need to know
+
+### 10. EXECUTIVE SUMMARY
+Provide a brief (3-4 sentences) high-level overview of the entire tender, covering the what, where, and who, to give the vendor an immediate understanding of the project.
 
 ### 10. GeM PORTAL PRE-QUALIFICATION REQUIREMENT (ONLY FOR GeM TENDERS)
 **IMPORTANT:** If this is a GeM (Government e-Marketplace) portal tender, you MUST extract ALL pre-qualification requirements into a SINGLE FORMATTED STRING in the `pre_qualification_requirement` field.

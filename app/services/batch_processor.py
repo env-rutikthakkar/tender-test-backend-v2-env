@@ -40,9 +40,14 @@ MICRO_SUMMARY_PROMPT = """You are a tender extraction specialist. Extract ALL im
 - **Rejection of Bid** & **Disqualification Criteria**
 - **Offline Submissions** (Hardcopy) & **Online Submissions** (Scanned)
 - **Minimum Requirements at Bidder's End** (Infrastructure)
+- **6.2 Pre-Qualification/Eligibility Criteria** & **6.3 Evaluation/ Scoring criteria**
+- **Executive Summary** (Project overview)
+- **Submission Instructions** (Offline address, labels)
 
-**FOR DOCUMENTS (GeM tenders ONLY):**
-Extract documents from the pre-qualification table "विक्रेता से मांगे गए दस्तावेज़/Document required from seller" section only - NOT from ATC sections.
+**INSTRUCTION:**
+- If you find a table (e.g., Eligibility Table, Scoring Table, Document List), **DO NOT SUMMARIZE IT**. Instead, extract the **RAW DATA** from that table exactly as it appears.
+- Capture all numbered sections (e.g., "1.1 Offline Submissions", "3.6 Minimum Requirements", "6.2 Eligibility", "6.3 Scoring").
+- Vendors need the EXACT criteria to make a decision.
 
 **GeM PORTAL PRE-QUALIFICATION REQUIREMENT (if applicable):**
 - Minimum Average Annual Turnover (For 3 Years) - look for "बिडर का न्यूनतम औसत वार्षिक टर्नओवर" - extract EXACT value like "45 Lakh (s)"
@@ -106,6 +111,10 @@ FINAL_STRUCTURED_PROMPT = """You are an expert tender analyst. Create a comprehe
 - ✅ **organization_telephone** - Search for: "Tel", "Phone", "Contact No" near address
 - ✅ **organization_fax** - Search for: "Fax", "Facsimile" near address
 - ✅ **tender_document_date** - Search for: "Dated:", "NIT Date"
+- ✅ **detailed_pre_qualification_criteria** - Search for: "6.2 Pre-Qualification/Eligibility Criteria", "Eligibility Criteria", "Qualifying Requirements"
+- ✅ **detailed_evaluation_scoring_criteria** - Search for: "6.3 Evaluation/ Scoring criteria", "Evaluation Criteria", "Weightage", "Scoring System"
+- ✅ **executive_summary** - Summarize the whole project in 3-4 sentences.
+- ✅ **submission_instructions** - Search for offline submission address, envelope labels, physical filing rules.
 
 **ELIGIBILITY INSTRUCTIONS:**
 - **Capture Complex Logic**: Extract multiple scenarios (e.g., "For 1st Call", "Option A OR Option B").
