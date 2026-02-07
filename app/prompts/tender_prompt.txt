@@ -260,12 +260,15 @@ Provide a brief (3-4 sentences) high-level overview of the entire tender, coveri
 You MUST extract ALL pre-qualification requirements into a SINGLE FORMATTED STRING in the `pre_qualification_requirement` field.
 
 These are typically found in a table format with both Hindi and English labels. Look for:
-- **Minimum Average Annual Turnover (For 3 Years)** - बिडर का न्यूनतम औसत वार्षिक टर्नओवर (extract to `turnover_requirement`)
-- **OEM Average Turnover (Last 3 Years)** - मूल उपकरण निर्माता का औसत टर्नओवर (extract to `oem_turnover_requirement`)
-- **Years of Past Experience Required** - उन्हीं/समान सेवा के लिए अपेक्षित विगत अनुभव के वर्ष (extract to `experience_required`)
-- **MSE Exemption for Years of Experience and Turnover** - एमएसएमई के लिए अनुभव के वर्षों और टर्नओवर से छूट (extract to `mse_relaxation`)
-- **Startup Exemption for Years of Experience and Turnover** - स्टार्टअप के लिए अनुभव के वर्षों और टर्नओवर से छूट (extract to `startup_relaxation`)
+- **Minimum Average Annual Turnover (For 3 Years)** - बिडर का न्यूनतम औसत वार्षिक टर्नओवर (extract amount to `turnover_requirement`)
+- **OEM Average Turnover (Last 3 Years)** - मूल उपकरण निर्माता का औसत टर्नओवर (extract amount to `oem_turnover_requirement`)
+- **Years of Past Experience Required** - उन्हीं/समान सेवा के लिए अपेक्षित विगत अनुभव के वर्ष (extract years to `experience_required`)
+- **MSE Relaxation for Years of Experience and Turnover** - एमएसएमई के लिए अनुभव के वर्षों और टर्नओवर से छूट (extract to `mse_relaxation`)
+- **Startup Relaxation for Years of Experience and Turnover** - स्टार्टअप के लिए अनुभव के वर्षों और टर्नओवर से छूट (extract to `startup_relaxation`)
 - **Document required from seller** - विक्रेता से मांगे गए दस्तावेज़ (COPY EXACT FULL TEXT AS IS into `documents_required` array)
+- **Type of Bid / बिड का प्रकार** - (extract to `type_of_bid`)
+- **Time allowed for Technical Clarifications / तकनीकी मूल्यांकन के दौरान तकनीकी स्पष्टीकरण हेतु अनुमत समय** - (extract to `technical_clarification_time`)
+- **Buyer Added Bid Specific Terms and Condition / खरीदार द्वारा बोली विशिष्ट नियम और शर्तें जोड़ी गईं** - (extract to `buyer_added_atc`)
 
 **REDUNDANCY RULE:** Fill these values into BOTH their individual schema fields AND the combined `pre_qualification_requirement` string.
 
