@@ -27,13 +27,14 @@ CRITICAL_FIELDS = {
         "tender_title", "portal", "department",
         "issuing_authority", "tender_id", "country", "state",
         "organization_address", "tender_document_date",
-        "submission_instructions"
+        "submission_instructions", "boq_title"
     ],
     "eligibility_snapshot": [
         "turnover_requirement", "experience_required",
         "who_can_bid", "consortium_or_jv_allowed",
         "international_bidders_allowed",
         "bidder_technical_infrastructure",
+        "oem_turnover_requirement", "mse_relaxation", "startup_relaxation",
         "detailed_pre_qualification_criteria"
     ],
     "scope_of_work": [

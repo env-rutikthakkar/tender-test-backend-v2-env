@@ -27,7 +27,10 @@ TENDER_SCHEMA = {
         "organization_fax": "",
         "tender_document_date": "",
         "submission_instructions": "",
-        "type_of_bid": ""
+        "type_of_bid": "",
+        "item_category": "",
+        "total_quantity": "",
+        "boq_title": ""
     },
     "scope_of_work": {
         "description": "",
@@ -63,6 +66,9 @@ TENDER_SCHEMA = {
         "specific_licenses_required": "",
         "past_performance_requirement": "",
         "bidder_technical_infrastructure": "",
+        "oem_turnover_requirement": "",
+        "mse_relaxation": "",
+        "startup_relaxation": "",
         "detailed_pre_qualification_criteria": ""
     },
     "financial_requirements": {
@@ -73,7 +79,8 @@ TENDER_SCHEMA = {
         "retention_money": "",
         "payment_terms": "",
         "advance_payment": "",
-        "mobilization_advance": ""
+        "mobilization_advance": "",
+        "epbg_details": ""
     },
     "documents_required": [],
     "online_submission_documents": [],
@@ -88,7 +95,9 @@ TENDER_SCHEMA = {
         "warranty_period": "",
         "special_restrictions": "",
         "rejection_of_bid": "",
-        "splitting_of_work": ""
+        "splitting_of_work": "",
+        "mii_purchase_preference": "",
+        "mse_purchase_preference": ""
     },
     "vendor_decision_hint": {
         "eligible_if": "",
@@ -106,6 +115,8 @@ TENDER_SCHEMA = {
         "detailed_evaluation_scoring_criteria": "",
         "buyer_added_atc": "",
         "technical_clarification_time": "",
+        "evaluation_method": "",
+        "bid_to_ra_enabled": "",
         "other_critical_info": ""
     },
     "pre_qualification_requirement": "",
@@ -150,6 +161,9 @@ class TenderMeta(BaseTenderModel):
     tender_document_date: str = Field(default="", description="Date mentioned on the tender document (e.g. Dated: DD/MM/YYYY)")
     submission_instructions: str = Field(default="", description="Specific instructions for bid submission (e.g., envelope labels, offline address)")
     type_of_bid: str = Field(default="", description="Type of bid (e.g., Single Packet, Two Packet)")
+    item_category: str = Field(default="", description="Main product category from GeM Bid Document")
+    total_quantity: str = Field(default="", description="Total quantity of items required")
+    boq_title: str = Field(default="", description="BOQ Title from GeM document")
 
     @field_validator("*", mode="before")
     @classmethod
@@ -203,6 +217,9 @@ class EligibilitySnapshot(BaseTenderModel):
     specific_licenses_required: str = Field(default="")
     past_performance_requirement: str = Field(default="")
     bidder_technical_infrastructure: str = Field(default="", description="Minimum technical infrastructure required at bidder's end (e.g., Computer, Broadband, DSC)")
+    oem_turnover_requirement: str = Field(default="", description="OEM Average Turnover Requirement")
+    mse_relaxation: str = Field(default="", description="MSE Relaxation for Experience/Turnover")
+    startup_relaxation: str = Field(default="", description="Startup Relaxation for Experience/Turnover")
     detailed_pre_qualification_criteria: str = Field(default="", description="Extended details from Pre-Qualification/Eligibility Criteria section")
 
     @field_validator("*", mode="before")
@@ -267,6 +284,8 @@ class AdditionalInformation(BaseTenderModel):
     detailed_evaluation_scoring_criteria: str = Field(default="", description="Detailed points from Evaluation/Scoring criteria section")
     buyer_added_atc: str = Field(default="", description="Buyer Added Bid Specific Terms and Conditions (ATC)")
     technical_clarification_time: str = Field(default="", description="Time allowed for Technical Clarifications during technical evaluation")
+    evaluation_method: str = Field(default="", description="GeM Evaluation Method (Total vs Item-wise)")
+    bid_to_ra_enabled: str = Field(default="", description="Whether Reverse Auction is enabled")
     other_critical_info: str = Field(default="")
 
     @field_validator("*", mode="before")
@@ -290,6 +309,7 @@ class TenderSummary(BaseModel):
     additional_important_information: AdditionalInformation = Field(default_factory=lambda: AdditionalInformation())
     pre_qualification_requirement: str = Field(default="", description="GeM Portal specific pre-qualification requirement as single formatted string - only for GeM tenders")
     executive_summary: str = Field(default="", description="Brief high-level summary of the entire tender")
+    external_links: List[str] = Field(default_factory=list, description="All external URLs/Hyperlinks found in the document")
 
     @field_validator("pre_qualification_requirement", mode="before")
     @classmethod

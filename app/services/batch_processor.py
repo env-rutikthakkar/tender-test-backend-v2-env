@@ -41,6 +41,8 @@ MICRO_SUMMARY_PROMPT = """You are a tender extraction specialist. Extract ALL im
 - **Offline Submissions** (Hardcopy) & **Online Submissions** (Scanned)
 - **Minimum Requirements at Bidder's End** (Infrastructure)
 - **6.2 Pre-Qualification/Eligibility Criteria** & **6.3 Evaluation/ Scoring criteria**
+- **BOQ Title** & **Item Category**
+- **EMD Schedules** & **ePBG Details**
 - **Executive Summary** (Project overview)
 - **Submission Instructions** (Offline address, labels)
 
@@ -117,7 +119,16 @@ FINAL_STRUCTURED_PROMPT = """You are an expert tender analyst. Create a comprehe
 - ✅ **submission_instructions** - Search for offline submission address, envelope labels, physical filing rules.
 - ✅ **date_and_time_of_issue** - Search for exact label "Date & time of issue".
 - ✅ **due_date_and_time_of_submission** - Search for exact label "Due Date & time of Submission".
+- ✅ **item_category** - Main product category mentioned in the Bid Details table.
+- ✅ **boq_title** - Search for "BOQ Title".
+- ✅ **total_quantity** - Total quantity mentioned in the Bid Details table.
 - ✅ **liquidated_damages** - Extract the formula (e.g., "2% per week up to 10%").
+- ✅ **epbg_details** - Search for "ePBG Detail" table. Include Percentage and Duration.
+- ✅ **evaluation_method** - Search for "Evaluation Method" in Bid Details.
+- ✅ **bid_to_ra_enabled** - Search for "Bid to RA enabled" in Bid Details.
+- ✅ **oem_turnover_requirement** - Search for "OEM Average Turnover".
+- ✅ **mse_relaxation** - Search for "MSE Relaxation for Years Of Experience".
+- ✅ **startup_relaxation** - Search for "Startup Relaxation for Years Of Experience".
 - ✅ **type_of_bid** - Search for "Type of Bid" (GeM).
 - ✅ **technical_clarification_time** - Search for "Time allowed for Technical Clarifications during technical evaluation".
 - ✅ **buyer_added_atc** - Search for "Buyer Added Bid Specific Terms and Conditions" or "ATC".
