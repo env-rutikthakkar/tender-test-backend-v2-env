@@ -155,9 +155,10 @@ def extract_structured_fields(text: str) -> Dict[str, any]:
     for k, v in [("msme_exemption", "msme_exemption"), ("startup_exemption", "startup_exemption")]:
         if re.search(PATTERNS[k], text, re.IGNORECASE): extracted[v] = "Yes"
 
-    # Extract GeM Pre-qualification requirements
-    gem_prequalif = extract_gem_pre_qualification(text)
-    extracted.update(gem_prequalif)
+    # Extract GeM Pre-qualification requirements ONLY FOR GeM PORTALS
+    if re.search(PATTERNS["portal_gem"], text, re.IGNORECASE):
+        gem_prequalif = extract_gem_pre_qualification(text)
+        extracted.update(gem_prequalif)
 
     return extracted
 
