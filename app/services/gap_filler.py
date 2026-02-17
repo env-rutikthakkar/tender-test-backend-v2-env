@@ -1,16 +1,16 @@
 """
 Gap Filler Service
-Identifies missing/empty fields and re-extracts them from source documents
+Identifies missing or empty fields in the extraction result and uses targeted LLM calls
+to re-extract them from the source documents.
 """
 
-import json
 import logging
 from typing import Dict, List, Any
 from app.services.groq_client import call_groq_with_retry, validate_json_response
 
 logger = logging.getLogger(__name__)
 
-# Fields that must be filled (high priority)
+# Configuration of critical fields that require high-confidence extraction
 CRITICAL_FIELDS = {
     "key_dates": [
         "bid_end", "bid_start", "publication_date", "bid_validity",
@@ -60,157 +60,114 @@ CRITICAL_FIELDS = {
     ]
 }
 
-# Values that indicate missing data
-EMPTY_INDICATORS = [
-    "",
-    "Not mentioned",
-    "N/A",
-    "Not specified",
-    "Not available",
-    "TBD",
-    "To be announced",
-    None
-]
+EMPTY_INDICATORS = ["", "not mentioned", "n/a", "not specified", "not available", "tbd", None]
 
+def find_missing_fields(data: Dict[str, Any], parent_key: str = "", path: str = "") -> List[Dict[str, Any]]:
+    """
+    Recursively traverse JSON data to find fields with empty values.
 
-def find_missing_fields(data: dict, parent_key: str = "", path: str = "") -> List[Dict[str, str]]:
-    """Recursively find empty or missing fields."""
+    Args:
+        data (Dict[str, Any]): JSON object to scan.
+        parent_key (str): Key of the current section.
+        path (str): Dot-notated path to the current field.
+
+    Returns:
+        List[Dict[str, Any]]: List of missing field metadata.
+    """
     missing = []
     for key, value in data.items():
         current_path = f"{path}.{key}" if path else key
         if isinstance(value, dict):
             missing.extend(find_missing_fields(value, key, current_path))
         elif isinstance(value, list):
-            # Check if list is empty or all items are empty
             if not value or all(not item for item in value):
                 missing.append({
                     "section": parent_key or "root",
                     "field": key,
                     "path": current_path,
-                    "current_value": value,
                     "is_critical": _is_critical_field(parent_key, key)
                 })
-        elif value in EMPTY_INDICATORS:
+        elif value is None or (isinstance(value, str) and value.lower().strip() in EMPTY_INDICATORS):
             missing.append({
                 "section": parent_key or "root",
                 "field": key,
                 "path": current_path,
-                "current_value": value,
                 "is_critical": _is_critical_field(parent_key, key)
             })
     return missing
 
 def _is_critical_field(section: str, field: str) -> bool:
-    """Check if field is marked critical."""
+    """Helper to check if a field is critical."""
     return section in CRITICAL_FIELDS and field in CRITICAL_FIELDS[section]
 
-async def fill_missing_fields(draft_json: dict, all_documents: List[Dict[str, str]]) -> dict:
-    """Identify and re-extract missing critical fields from docs."""
+async def fill_missing_fields(draft_json: Dict[str, Any], documents: List[Dict[str, str]]) -> Dict[str, Any]:
+    """
+    High-level entry point for re-extracting missing critical fields.
+
+    Args:
+        draft_json (Dict[str, Any]): Current extraction state.
+        documents (List[Dict[str, str]]): Source document texts.
+
+    Returns:
+        Dict[str, Any]: Updated JSON with gaps filled.
+    """
     try:
         missing = find_missing_fields(draft_json)
         critical = [m for m in missing if m["is_critical"]]
-        if not critical: return draft_json
 
-        filled_data = await _extract_missing_fields(critical, all_documents)
+        if not critical:
+            return draft_json
+
+        logger.info(f"Attempting to fill {len(critical)} critical gaps")
+        filled_data = await _execute_gap_extraction(critical, documents)
         return _deep_merge(draft_json, filled_data)
     except Exception as e:
         logger.error(f"Gap filling failed: {str(e)}")
         return draft_json
 
-async def _extract_missing_fields(missing_fields: List[Dict], documents: List[Dict[str, str]]) -> dict:
-    """Targeted LLM extraction for specific missing fields."""
+async def _execute_gap_extraction(missing_fields: List[Dict], documents: List[Dict[str, str]]) -> Dict[str, Any]:
+    """Internal task for targeted LLM extraction."""
     field_list = "\n".join([f"- {m['path']}" for m in missing_fields])
-    doc_context = _format_documents(documents)
+    doc_context = "\n".join([f"--- Doc: {d['filename']} ---\n{d['content'][:15000]}" for d in documents])
 
-    prompt = f"""You are a tender specialist. Extract exactly these missing fields:
+    prompt = f"""You are a tender analyst. We have some missing fields from a previous extraction pass.
+Please search the document text below and extract EXACT values for these specific paths.
+
+MISSING FIELDS:
 {field_list}
 
-**INSTRUCTIONS:**
-- Search for variations (e.g., 'bid_start' can be 'bid opening' or 'start date').
-- For dates, include TIME if present.
-- Use EXACT values from text.
-- Match existing JSON structure.
-
-**DOCUMENTS:**
+DOCUMENT CONTEXT (Truncated):
 {doc_context}
 
-Return ONLY valid JSON:"""
+INSTRUCTIONS:
+1. Search specifically for these fields by path.
+2. If found, provide the exact corresponding value.
+3. If still not found, use "Not mentioned".
+4. Output valid JSON matching the path structure.
+"""
+    res = await call_groq_with_retry(prompt)
+    return validate_json_response(res)
 
-    response = await call_groq_with_retry(prompt)
-    return validate_json_response(response)
-
-
-def _format_documents(docs: List[Dict]) -> str:
-    """
-    Format documents for LLM context with smart truncation.
-
-    Args:
-        docs: List of {filename, content} dicts
-
-    Returns:
-        Formatted string
-    """
-    formatted = []
-    max_chars_per_doc = 15000  # Limit to avoid token overflow
-
-    for doc in docs:
-        content = doc["content"]
-        filename = doc["filename"]
-
-        # Truncate if too long
-        if len(content) > max_chars_per_doc:
-            content = content[:max_chars_per_doc] + "\n... [truncated for length]"
-
-        formatted.append(f"\n{'='*60}\n📄 {filename}\n{'='*60}\n{content}\n")
-
-    return "\n".join(formatted)
-
-
-def _deep_merge(base: dict, updates: dict) -> dict:
-    """
-    Recursively merge updates into base dict.
-
-    Args:
-        base: Original dict
-        updates: Updates to apply
-
-    Returns:
-        Merged dict
-    """
+def _deep_merge(base: Dict[str, Any], updates: Dict[str, Any]) -> Dict[str, Any]:
+    """Recursively merge updates into base dictionary without overwriting valid data with empty data."""
     result = base.copy()
-
     for key, value in updates.items():
         if isinstance(value, dict) and key in result and isinstance(result[key], dict):
-            # Recursively merge nested dicts
             result[key] = _deep_merge(result[key], value)
         elif value not in EMPTY_INDICATORS:
-            # Only update if new value is not empty
             result[key] = value
-
     return result
 
-
-def get_missing_field_summary(data: dict) -> Dict[str, Any]:
-    """
-    Generate summary of missing fields for logging/debugging.
-
-    Returns:
-        Summary statistics
-    """
+def get_missing_field_summary(data: Dict[str, Any]) -> Dict[str, Any]:
+    """Generate summary of missing fields for validation and logging."""
     missing = find_missing_fields(data)
+    sections = {}
+    for m in missing:
+        s = m["section"]
+        sections[s] = sections.get(s, 0) + 1
 
     return {
         "total_missing": len(missing),
         "critical_missing": len([m for m in missing if m["is_critical"]]),
-        "missing_by_section": _group_by_section(missing),
-        "details": missing
+        "by_section": sections
     }
-
-
-def _group_by_section(missing: List[Dict]) -> Dict[str, int]:
-    """Group missing fields by section."""
-    sections = {}
-    for m in missing:
-        section = m["section"]
-        sections[section] = sections.get(section, 0) + 1
-    return sections

@@ -1,15 +1,15 @@
 """
 Rule-Based Field Extraction
-Uses regex patterns to extract structured fields BEFORE LLM processing
-Critical for cost optimization and accuracy
+Uses regex patterns to extract structured fields BEFORE LLM processing.
 """
 
 import re
-from typing import Dict, Optional, List
 import logging
+from typing import Dict, Optional, List
+from app.services.gem_rules import extract_gem_fields
+from app.services.cppp_rules import extract_cppp_fields
 
 logger = logging.getLogger(__name__)
-
 
 # Regex Patterns for Common Tender Fields
 PATTERNS = {
@@ -37,7 +37,16 @@ PATTERNS = {
 }
 
 def extract_field(text: str, pattern_key: str) -> Optional[str]:
-    """Extract a single field using regex."""
+    """
+    Extract a single field from text using a predefined regex pattern.
+
+    Args:
+        text (str): The text to search within.
+        pattern_key (str): The key in the PATTERNS dictionary.
+
+    Returns:
+        Optional[str]: The extracted text or None if not found.
+    """
     pattern = PATTERNS.get(pattern_key)
     if not pattern: return None
     match = re.search(pattern, text, re.IGNORECASE)
@@ -46,7 +55,15 @@ def extract_field(text: str, pattern_key: str) -> Optional[str]:
     return None
 
 def extract_all_dates(text: str) -> List[str]:
-    """Extract all dates from text."""
+    """
+    Extract all date-like strings from the document text.
+
+    Args:
+        text (str): Document text.
+
+    Returns:
+        List[str]: List of unique date strings found.
+    """
     dates = []
     for k in ["date_dd_mm_yyyy", "date_dd_mmm_yyyy"]:
         dates.extend(re.findall(PATTERNS[k], text, re.IGNORECASE))
@@ -54,20 +71,24 @@ def extract_all_dates(text: str) -> List[str]:
 
 def detect_portal(text: str) -> str:
     """
-    Enhanced portal detection with confidence scoring.
-    Returns: "GeM", "CPPP", or "Generic"
+    Detect which government portal the tender belongs to using keyword weights.
+
+    Args:
+        text (str): Document text.
+
+    Returns:
+        str: "GeM", "CPPP", or "Generic".
     """
     gem_score = 0
     cppp_score = 0
 
-    # GeM indicators with different weights
     gem_indicators = [
         ("Government e-Marketplace", 2),
         ("GeM Portal", 2),
         ("gem.gov.in", 3),
-        ("GEM/202", 3),  # GEM tender ID pattern
-        ("बिडर का न्यूनतम", 2),  # Hindi text (Bidder minimum)
-        ("मूल उपकरण निर्माता", 2),  # Hindi text (OEM)
+        ("GEM/202", 3),
+        ("बिडर का न्यूनतम", 2),
+        ("मूल उपकरण निर्माता", 2),
         ("Buyer Added Terms", 2),
         ("ePBG", 2),
         ("Pre-Qualification Requirement", 1),
@@ -76,7 +97,6 @@ def detect_portal(text: str) -> str:
         ("Total Quantity", 1),
     ]
 
-    # CPPP indicators with different weights
     cppp_indicators = [
         ("Central Public Procurement Portal", 3),
         ("CPPP", 3),
@@ -93,19 +113,16 @@ def detect_portal(text: str) -> str:
 
     text_lower = text.lower()
 
-    # Count GeM indicators
     for indicator, weight in gem_indicators:
         if indicator.lower() in text_lower:
             gem_score += weight
 
-    # Count CPPP indicators
     for indicator, weight in cppp_indicators:
         if indicator.lower() in text_lower:
             cppp_score += weight
 
     logger.info(f"Portal detection - GeM score: {gem_score}, CPPP score: {cppp_score}")
 
-    # Decision logic: need at least 2 points and clear winner
     if gem_score > cppp_score and gem_score >= 2:
         return "GeM"
     elif cppp_score > gem_score and cppp_score >= 2:
@@ -115,40 +132,47 @@ def detect_portal(text: str) -> str:
 
 def extract_structured_fields(text: str) -> Dict[str, any]:
     """
-    Extract known fields using regex before LLM processing.
-    Routes to portal-specific extraction based on detected portal type.
+    Root function to extract fields using regex before LLM processing.
+    Routes to portal-specific regex rules.
+
+    Args:
+        text (str): Full document text.
+
+    Returns:
+        Dict[str, any]: dictionary of regex-extracted fields.
     """
-    # Detect portal first
     portal = detect_portal(text)
     logger.info(f"Routing extraction to {portal} extraction logic")
 
-    # Route to portal-specific extraction
     if portal == "GeM":
-        from app.services.gem_rules import extract_gem_fields
         gem_extracted = extract_gem_fields(text)
-        # Add base fields
         return _extract_base_fields(text, portal, gem_extracted)
     elif portal == "CPPP":
-        from app.services.cppp_rules import extract_cppp_fields
         cppp_extracted = extract_cppp_fields(text)
-        # Add base fields
         return _extract_base_fields(text, portal, cppp_extracted)
     else:
-        # Generic extraction (fallback)
         return _extract_base_fields(text, portal, {})
 
 def _extract_base_fields(text: str, portal: str, portal_specific: Dict[str, any]) -> Dict[str, any]:
-    """Extract common fields applicable to all portals."""
+    """
+    Internal helper to extract common fields applicable across all portals.
+
+    Args:
+        text (str): Document text.
+        portal (str): Detected portal name.
+        portal_specific (dict): Fields already extracted by specific rules.
+
+    Returns:
+        Dict[str, any]: Merged dictionary of common and specific fields.
+    """
     extracted = {"portal": portal}
     extracted.update(portal_specific)
 
-    # ID (if not already extracted by portal-specific logic)
     if "tender_id" not in extracted:
         tid = extract_field(text, "tender_id_gem") or extract_field(text, "tender_id_generic")
         if tid and not re.match(r"^\d{1,2}[-/\.]\d{1,2}[-/\.]\d{2,4}$", tid):
             extracted["tender_id"] = tid
 
-    # Financials (if not already extracted)
     if "emd" not in extracted:
         emd = extract_field(text, "emd_amount")
         if emd: extracted["emd"] = f"₹{emd}"
@@ -157,7 +181,6 @@ def _extract_base_fields(text: str, portal: str, portal_specific: Dict[str, any]
         fee = extract_field(text, "tender_fee")
         if fee: extracted["tender_fee"] = f"₹{fee}"
 
-    # Dates (common patterns)
     for f in ["bid_start", "bid_end", "tech_opening", "financial_opening"]:
         if f not in extracted:
             val = extract_field(text, f"{f}_date" if "bid" in f else f)
@@ -167,7 +190,6 @@ def _extract_base_fields(text: str, portal: str, portal_specific: Dict[str, any]
         bval = extract_field(text, "bid_validity_period")
         if bval: extracted["bid_validity"] = f"{bval} days"
 
-    # Eligibility & Performance (if not already extracted)
     if "turnover_requirement" not in extracted:
         turnover = extract_field(text, "turnover")
         if turnover: extracted["turnover_requirement"] = f"₹{turnover}"
@@ -185,7 +207,15 @@ def _extract_base_fields(text: str, portal: str, portal_specific: Dict[str, any]
     return extracted
 
 def extract_critical_sections(text: str) -> Dict[str, str]:
-    """Extract key document sections to focus LLM analysis."""
+    """
+    Extract relevant sections of the document to reduce LLM context size.
+
+    Args:
+        text (str): Full document text.
+
+    Returns:
+        Dict[str, str]: Mapping of section name to extracted text snippet.
+    """
     sections = {}
     pats = {
         "eligibility": r"(?:Eligibility|Qualification|Who Can Bid).*?\n(.*?)(?=\n\s*\d+\.|\Z)",

@@ -1,57 +1,50 @@
-# Tender AI - Backend Architecture & Detailed Flow
+# 📖 Tender AI System Guide
 
-This system processes government tender documents (PDFs) into structured JSON summaries using Groq Cloud's LGU-powered inference.
-
-## 🚀 High-Level Architecture
-```text
-PDF Upload → Multi-Pass Extraction → LLM Analysis → Gap Filling → API Result
-```
-
-## 📂 System Components
-
-### 1. API Layer (`app/api/tender.py`)
-- **Endpoint**: `POST /tender/process`
-  - Accepts a `List[UploadFile]` for single or multiple PDFs.
-  - Returns a unified summary with a `_metadata` block describing the pipeline performance.
-
-### 2. Processing Engine (`app/services/summarizer.py`)
-This is the central orchestrator that decides which extraction strategy to use based on document size and complexity.
+This guide explains how our system turns complex tender PDF files into simple, structured data. We follow a 6-step process to ensure accuracy and catch every detail.
 
 ---
 
-## 🛠 Detailed Internal Flow
+## � Step-by-Step Flow
 
-### Step 1: Ingestion & Smart Extraction
-- **Text Conversion**: `pdf_extractor.py` uses `PyMuPDF` for high-speed text extraction.
-- **Link Following**: The system scans for external PDF links (common in government NITs) and automatically fetches/extracts their content to ensure no crucial annexures are missed.
-- **Content Unification**: Multiple files are merged with clear boundary markers (e.g., `=== Filename ===`) so the LLM understands the source of each section.
+### 1. 📤 Upload & Text Reading
+When you upload one or more PDFs, the system:
+*   **Reads the Text**: Uses high-speed tools to pull every word from your files.
+*   **Follows Links**: If the main document has a link to another PDF (like an Annexure), the system automatically follows that link and reads that file too.
+*   **Merges Everything**: It combines all the text into one big "project context."
 
-### Step 2: Rule-Based "Ground Truth" Pre-Extraction
-- Before calling the LLM, `rule_parser.py` runs optimized Regex patterns to find:
-  - **Tender IDs & Portals**: GeM/CPPP specific patterns.
-  - **Financials**: EMD, Tender fees, and Performance Security.
-  - **Critical Dates**: Bid start, end, and opening dates using date-aware regex.
-- **Benefit**: This "Ground Truth" is passed to the LLM to prevent hallucinations of core data.
+### 2. 🔍 Portal Detection
+The system automatically figures out where the tender is from:
+*   **GeM**: Government e-Marketplace.
+*   **CPPP**: Central Public Procurement Portal.
+*   **Generic**: Any other standard PDF format.
 
-### Step 3: Strategy Selection (The 40k Token Rule)
-The system estimates the total token count of the combined text:
-- **Single-Pass Analysis**: If tokens < 40,000, it builds a "Smart Context" by prioritizing critical sections (Eligibility, Scope, etc.) and executes a single high-context LLM call.
-- **Hierarchical Batching**: For massive documents (> 40k tokens), the system:
-  1. Splits text into manageable chunks.
-  2. Runs **Micro-Summaries** on all chunks in parallel.
-  3. Merges micro-summaries into a "Master Context" for final structural analysis.
+### 3. 📝 Rule-Based "Ground Truth"
+Before asking the AI, we use fast "Rules" (Regex) to find facts that never change. This is done in both **English and Hindi**:
+*   **Tender IDs**: Exact matching of specific ID formats.
+*   **Core Dates**: Identifying "Bid End Date" or "Opening Date."
+*   **Financials**: Finding "EMD" (Security Deposit) or "Tender Fee" amounts.
+*   *Why?* This ensures the AI doesn't "hallucinate" or guess these critical numbers.
 
-### Step 4: LLM Analysis (Groq LPU)
-- **Prompting**: Uses a detailed system prompt that enforces strict JSON schema adherence.
-- **Inference**: Powered by high-throughput LPUs via `groq_client.py`.
-- **Infrastructure**: Includes Token-Bucket rate limiting (TPM/RPM) to handle high-concurrency without 429 errors.
+### 4. 🧠 Smart AI Analysis (The Brain)
+The system chooses the best way to process the document based on its size:
+*   **For Normal Documents**: It picks out the most important sections (Eligibility, Scope, Dates) and sends them to the Groq AI for a single, complete summary.
+*   **For Massive Documents (100+ pages)**: It splits the document into smaller chapters, summarizes each chapter, and then merges those summaries into one final result.
 
-### Step 5: Active Gap Filling (Deep Search)
-- Post-analysis, the system performs a **Gap Check** against the required schema.
-- If critical fields (like `Bid End Date` or `Turnover`) are marked as "Not mentioned", it triggers `gap_filler.py`.
-- **Deep Search**: A targeted "hunt" prompt is sent to the LLM, focusing specifically on finding the missing pieces across the full raw text using flexible variation matching (synonyms).
+### 5. 🩹 Active Gap Filling
+After the AI finishes, the system checks the result. If a critical field (like "Turnover Requirement") is still says "Not mentioned," the system:
+*   **Goes Back**: It re-scans the raw text specifically looking for that one missing piece.
+*   **Deep Search**: It uses a specialized "hunt" prompt to find the answer across all pages.
 
-### Step 6: Validation & Finalization
-- **Pydantic Validation**: Ensures the final JSON matches the `TenderSummary` model.
-- **Metadata**: Appends processing stats (tokens used, fields filled, pipeline versions).
-- **Output**: Returns the structured summary directly to the API response.
+### 6. ✅ Validation & Final Clean
+The final step ensures the data is ready for the dashboard:
+*   **Portal Check**: It verifies that all fields required by GeM or CPPP are actually there.
+*   **Cleanup**: It removes any messy "N/A" or "Not Mentioned" tags, leaving you with only the useful information.
+*   **Metadata**: It attaches a summary of how the processing went (e.g., how many files were read).
+
+---
+
+## 🚀 Why This is Powerful
+1.  **Catches Everything**: By following links and annexures.
+2.  **No Hallucinations**: Because we use "Rules" for facts and AI for understanding.
+3.  **Fast**: Powered by Groq LPU technology for near-instant results.
+4.  **Simple**: You get a clean JSON or Dashboard view, not a 100-page PDF struggle.

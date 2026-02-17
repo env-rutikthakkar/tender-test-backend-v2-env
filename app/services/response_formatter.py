@@ -1,6 +1,7 @@
 """
-Response Formatter
-Restructures API response to remove duplicates and make sections concise for better UX
+Response Formatter Service
+Restructures and cleans the extracted tender data for optimal API presentation.
+Handles eligibility summarization and portal-specific metadata movement.
 """
 
 import logging
@@ -8,27 +9,29 @@ from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 
-
 def format_tender_response(tender_data: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Format tender response to:
-    1. Keep eligibility_snapshot with all separate fields
-    2. Populate vendor_decision_hint.eligible_if with eligibility summary
-    3. Move pre_qualification_requirement to metadata (remove duplicate)
+    Apply common formatting logic to any tender response.
+    1. Generates an eligibility summary for vendor decision hints.
+    2. Moves raw pre-qualification text to metadata to avoid clutter.
+
+    Args:
+        tender_data (Dict[str, Any]): The raw structured tender analysis.
+
+    Returns:
+        Dict[str, Any]: The formatted response.
     """
     formatted = tender_data.copy()
 
-    # 1. Keep eligibility_snapshot as-is (all separate fields visible)
+    # Generate eligibility summary for decision hint
     eligibility_snapshot = formatted.get("eligibility_snapshot", {})
-
-    # 2. Populate eligible_if in vendor_decision_hint with eligibility summary
     if eligibility_snapshot:
-        eligibility_summary = _create_eligibility_summary(eligibility_snapshot)
+        summary = _create_eligibility_summary(eligibility_snapshot)
         if "vendor_decision_hint" not in formatted:
             formatted["vendor_decision_hint"] = {}
-        formatted["vendor_decision_hint"]["eligible_if"] = eligibility_summary
+        formatted["vendor_decision_hint"]["eligible_if"] = summary
 
-    # 3. Move pre_qualification_requirement to metadata (avoid duplication in main response)
+    # Move raw pre-qualification requirement to metadata to avoid duplication in main payload
     pre_qual = formatted.pop("pre_qualification_requirement", None)
     if "_metadata" not in formatted:
         formatted["_metadata"] = {}
@@ -37,108 +40,61 @@ def format_tender_response(tender_data: Dict[str, Any]) -> Dict[str, Any]:
 
     return formatted
 
-
-def _create_eligibility_summary(eligibility_snapshot: Dict[str, Any]) -> str:
+def _create_eligibility_summary(snapshot: Dict[str, Any]) -> str:
     """
-    Create a brief eligibility summary from detailed snapshot.
-    Example:
-    "Minimum ₹4 Lakh turnover with 3 years experience. MSME/Startup eligible with full relaxation.
-    Consortium allowed. Digital certificate required."
-    """
-    summary_parts = []
+    Construct a human-readable sentence summarizing the eligibility requirements.
 
-    # Turnover
-    turnover = eligibility_snapshot.get("turnover_requirement", "")
+    Args:
+        snapshot (Dict[str, Any]): The eligibility snapshot section.
+
+    Returns:
+        str: A concatenated summary string.
+    """
+    parts = []
+
+    # Financials
+    turnover = snapshot.get("turnover_requirement")
     if turnover:
-        summary_parts.append(f"Minimum {turnover} turnover")
+        parts.append(f"Minimum {turnover} turnover")
 
-    # Experience
-    experience = eligibility_snapshot.get("experience_required", "")
+    experience = snapshot.get("experience_required")
     if experience:
-        summary_parts.append(f"with {experience.lower()} experience")
+        parts.append(f"with {experience.lower()} experience")
 
-    # OEM Turnover (GeM)
-    oem_turnover = eligibility_snapshot.get("oem_turnover_requirement", "")
+    oem_turnover = snapshot.get("oem_turnover_requirement")
     if oem_turnover:
-        summary_parts.append(f"OEM {oem_turnover} turnover")
+        parts.append(f"OEM {oem_turnover} turnover")
 
-    # MSME/Startup
-    msme = eligibility_snapshot.get("mse_relaxation", "")
-    startup = eligibility_snapshot.get("startup_relaxation", "")
+    # Relaxations
     exemptions = []
-    if msme and "yes" in msme.lower():
+    if "yes" in str(snapshot.get("mse_relaxation", "")).lower():
         exemptions.append("MSME")
-    if startup and "yes" in startup.lower():
+    if "yes" in str(snapshot.get("startup_relaxation", "")).lower():
         exemptions.append("Startup")
-
     if exemptions:
-        summary_parts.append(f"{'/'.join(exemptions)} eligible with relaxation")
+        parts.append(f"{'/'.join(exemptions)} eligible with relaxation")
 
-    # Consortium/JV
-    consortium = eligibility_snapshot.get("consortium_or_jv_allowed", "")
-    if consortium and "yes" in consortium.lower():
-        summary_parts.append("Consortium/JV allowed")
+    # Legal/Misc
+    if "yes" in str(snapshot.get("consortium_or_jv_allowed", "")).lower():
+        parts.append("Consortium/JV allowed")
 
-    # Infrastructure
-    infrastructure = eligibility_snapshot.get("bidder_technical_infrastructure", "")
-    if infrastructure:
-        summary_parts.append("Digital certificate required")
+    if snapshot.get("bidder_technical_infrastructure"):
+        parts.append("Digital certificate and specific infrastructure required")
 
-    # International
-    intl = eligibility_snapshot.get("international_bidders_allowed", "")
-    if intl and "yes" in intl.lower():
-        summary_parts.append("International bidders welcome")
-
-    return ". ".join(summary_parts) + "."
-
-
-def _extract_key_requirements(eligibility_snapshot: Dict[str, Any]) -> str:
-    """Extract only the most important eligibility requirements as formatted string."""
-    key_reqs = []
-
-    fields_to_include = [
-        "who_can_bid",
-        "turnover_requirement",
-        "experience_required",
-        "oem_turnover_requirement",
-        "consortium_or_jv_allowed",
-        "mse_relaxation",
-        "startup_relaxation",
-        "bidder_technical_infrastructure",
-    ]
-
-    for field in fields_to_include:
-        if field in eligibility_snapshot:
-            value = eligibility_snapshot[field]
-            if value and str(value).strip() and str(value).lower() not in ["not found", "not mentioned", "n/a"]:
-                # Format field name for display
-                display_name = field.replace("_", " ").title()
-                key_reqs.append(f"{display_name}: {value}")
-
-    return " | ".join(key_reqs) if key_reqs else ""
-
-
-def format_gem_response(tender_data: Dict[str, Any]) -> Dict[str, Any]:
-    """Format response specifically for GeM tenders."""
-    # Use standard formatting - no GeM-specific section
-    # All fields kept in their original sections
-    return format_tender_response(tender_data)
-
-
-def format_cppp_response(tender_data: Dict[str, Any]) -> Dict[str, Any]:
-    """Format response specifically for CPPP tenders."""
-    # Use standard formatting - no CPPP-specific section
-    # All fields kept in their original sections
-    return format_tender_response(tender_data)
-
+    return ". ".join(parts) + "." if parts else "Refer to detailed eligibility section."
 
 def format_response_by_portal(tender_data: Dict[str, Any], portal_type: str) -> Dict[str, Any]:
-    """Route to portal-specific formatting."""
-    logger.info(f"Formatting response for {portal_type} portal")
+    """
+    Entry point for portal-specific response formatting.
+    Currently maps all portals to a unified standard format but allows for future divergence.
 
-    if portal_type == "GeM":
-        return format_gem_response(tender_data)
-    elif portal_type == "CPPP":
-        return format_cppp_response(tender_data)
-    else:
-        return format_tender_response(tender_data)
+    Args:
+        tender_data (Dict[str, Any]): Raw data.
+        portal_type (str): GeM, CPPP, or Generic.
+
+    Returns:
+        Dict[str, Any]: Formatted data.
+    """
+    logger.info(f"Formatting response for {portal_type} portal")
+    # All portals currently use the standard transformation
+    return format_tender_response(tender_data)
