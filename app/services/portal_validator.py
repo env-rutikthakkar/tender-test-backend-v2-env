@@ -47,19 +47,16 @@ def is_field_empty(value: Any) -> bool:
     return False
 
 def validate_gem_fields(data: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Validate GeM-specific fields are present and populated.
-
-    Args:
-        data (Dict[str, Any]): Extracted tender data.
-
-    Returns:
-        Dict[str, Any]: Validation results containing is_valid, missing_fields, and warnings.
-    """
+    """Validate GeM-specific fields are present and populated."""
     result = {"is_valid": True, "missing_fields": [], "warnings": []}
 
     for section, fields in GEM_REQUIRED_FIELDS.items():
         section_data = data if section == "root" else data.get(section, {})
+        # Ensure section_data is a dict before calling .get()
+        if not isinstance(section_data, dict):
+            logger.warning(f"Validation: Section {section} is not a dict: {type(section_data)}")
+            section_data = {}
+
         for field in fields:
             if is_field_empty(section_data.get(field)):
                 result["missing_fields"].append(f"{section}.{field}")
@@ -69,36 +66,31 @@ def validate_gem_fields(data: Dict[str, Any]) -> Dict[str, Any]:
     if is_field_empty(data.get("pre_qualification_requirement")):
         result["warnings"].append("pre_qualification_requirement is empty - GeM tenders MUST have this")
 
-    docs = data.get("documents_required", {}).get("documents_required", [])
+    # Access documents_required as it is a top-level list in the current schema
+    docs = data.get("documents_required", [])
     if not docs:
         result["warnings"].append("documents_required is empty - should contain pre-qual documents")
 
     return result
 
 def validate_cppp_fields(data: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Validate CPPP-specific fields are present and populated.
-
-    Args:
-        data (Dict[str, Any]): Extracted tender data.
-
-    Returns:
-        Dict[str, Any]: Validation results.
-    """
+    """Validate CPPP-specific fields are present and populated."""
     result = {"is_valid": True, "missing_fields": [], "warnings": []}
 
     for section, fields in CPPP_REQUIRED_FIELDS.items():
         section_data = data if section == "root" else data.get(section, {})
+        if not isinstance(section_data, dict):
+            section_data = {}
+
         for field in fields:
             if is_field_empty(section_data.get(field)):
                 result["missing_fields"].append(f"{section}.{field}")
                 result["is_valid"] = False
 
-    # CPPP-specific warnings
-    docs = data.get("documents_required", {})
-    if not docs.get("online_submission_documents"):
+    # Check top-level lists for CPPP
+    if not data.get("online_submission_documents"):
         result["warnings"].append("online_submission_documents is empty - CPPP tenders must separate online docs")
-    if not docs.get("offline_submission_documents"):
+    if not data.get("offline_submission_documents"):
         result["warnings"].append("offline_submission_documents is empty - check if physical submission is required")
 
     return result
@@ -122,22 +114,27 @@ def validate_generic_fields(data: Dict[str, Any]) -> Dict[str, Any]:
     ]
 
     for section, field in critical_fields:
-        if is_field_empty(data.get(section, {}).get(field)):
+        section_data = data.get(section, {})
+        if not isinstance(section_data, dict):
+            section_data = {}
+        if is_field_empty(section_data.get(field)):
             result["missing_fields"].append(f"{section}.{field}")
             result["is_valid"] = False
     return result
 
-def validate_extraction_completeness(data: Dict[str, Any], portal_type: str) -> Dict[str, Any]:
-    """
-    Route to portal-specific validation and perform final assembly of validation results.
+def validate_extraction_completeness(data: Any, portal_type: str) -> Dict[str, Any]:
+    """Route to portal-specific validation and perform final assembly."""
+    # Safety check: ensure data is a dict
+    if not isinstance(data, dict):
+        logger.error(f"Validation failed: Data is not a dictionary but {type(data)}")
+        return {
+            "is_valid": False,
+            "missing_fields": ["root"],
+            "warnings": ["CRITICAL: LLM did not return a structured object"],
+            "portal_type": portal_type,
+            "validation_summary": {"total_issues": 1, "missing_fields_count": 1, "warnings_count": 0}
+        }
 
-    Args:
-        data (Dict[str, Any]): Full extracted data.
-        portal_type (str): Key identifying the portal type.
-
-    Returns:
-        Dict[str, Any]: Combined validation dictionary with summary.
-    """
     logger.info(f"Validating {portal_type} portal extraction")
 
     if portal_type == "GeM":
@@ -149,10 +146,14 @@ def validate_extraction_completeness(data: Dict[str, Any], portal_type: str) -> 
 
     # Universal critical checks
     meta = data.get("tender_meta", {})
+    if not isinstance(meta, dict): meta = {}
+
     if is_field_empty(meta.get("tender_id")):
         validation["warnings"].append("Tender ID is missing - critical field")
 
     dates = data.get("key_dates", {})
+    if not isinstance(dates, dict): dates = {}
+
     if is_field_empty(dates.get("bid_end")):
         validation["warnings"].append("Bid end date is missing - critical field")
 

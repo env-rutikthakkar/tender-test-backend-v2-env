@@ -123,14 +123,18 @@ async def process_tender_multi_file(pdf_files: List[UploadFile]) -> Dict[str, An
         if tokens <= SINGLE_PASS_TOKEN_LIMIT:
             summary = await _run_single_pass(combined_text, rule_data, portal_type)
         else:
-            summary = await process_large_document(combined_text, rule_data, TENDER_SCHEMA)
+            logger.info(f"Using batch processing for large document ({tokens} tokens)")
+            res_data = await process_large_document(combined_text, rule_data, TENDER_SCHEMA)
+            summary = TenderSummary(**res_data).model_dump()
 
         # Recursive Gap Filling
         missing = get_missing_field_summary(summary)
         fields_filled_count = 0
         if missing['critical_missing'] > 0:
             logger.info(f"Filling {missing['critical_missing']} gaps for {portal_type}")
-            summary = await fill_missing_fields(summary, all_docs)
+            filled_res = await fill_missing_fields(summary, all_docs)
+            # Ensure gap-filled result also adheres to schema
+            summary = TenderSummary(**filled_res).model_dump()
             new_missing = get_missing_field_summary(summary)
             fields_filled_count = missing['critical_missing'] - new_missing['critical_missing']
 
