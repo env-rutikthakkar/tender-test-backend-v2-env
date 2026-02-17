@@ -3,6 +3,7 @@ from typing import List
 import logging
 
 from app.services.summarizer import process_tender_multi_file
+from app.services.response_formatter import format_response_by_portal
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/tender", tags=["tender"])
@@ -24,13 +25,19 @@ async def process_tender_api(
 
         summary = await process_tender_multi_file(pdf_files)
 
-        tender_id = summary.get("tender_meta", {}).get("tender_id", "")
+        # Get portal type from metadata
+        portal_type = summary.get("_metadata", {}).get("portal_type", "Generic")
+
+        # Format response based on portal type
+        formatted_summary = format_response_by_portal(summary, portal_type)
+
+        tender_id = formatted_summary.get("tender_meta", {}).get("tender_id", "")
 
         return {
             "status": "success",
             "tender_id": tender_id,
-            "summary": summary,
-            "metadata": summary.get("_metadata", {}),
+            "summary": formatted_summary,
+            "metadata": formatted_summary.get("_metadata", {}),
             "message": "Tender(s) processed and summarized successfully"
         }
     except Exception as e:

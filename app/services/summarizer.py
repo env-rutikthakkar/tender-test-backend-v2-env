@@ -10,7 +10,8 @@ from app.services.pdf_extractor import (
 )
 from app.services.rule_parser import (
     extract_structured_fields,
-    extract_critical_sections
+    extract_critical_sections,
+    detect_portal
 )
 from app.services.groq_client import (
     call_groq_with_retry,
@@ -28,6 +29,7 @@ from app.services.gap_filler import (
     get_missing_field_summary,
     fill_missing_fields
 )
+from app.services.portal_validator import validate_extraction_completeness
 from app.models.schema import TenderSummary, TENDER_SCHEMA
 
 logger = logging.getLogger(__name__)
@@ -35,11 +37,26 @@ logger = logging.getLogger(__name__)
 SINGLE_PASS_TOKEN_LIMIT = 40000
 DEFAULT_CONTEXT_BUDGET = 15000
 
-def load_prompt_template() -> str:
-    """Load main analysis prompt template."""
-    prompt_path = os.path.join(os.path.dirname(__file__), "../prompts/tender_prompt.txt")
-    with open(prompt_path, "r", encoding="utf-8") as f:
-        return f.read()
+def load_prompt_template(portal_type: str = "Generic") -> str:
+    """Load portal-specific prompt template."""
+    # Map portal type to prompt file
+    prompt_map = {
+        "GeM": "gem_prompt.txt",
+        "CPPP": "cppp_prompt.txt",
+        "Generic": "generic_prompt.txt"
+    }
+
+    filename = prompt_map.get(portal_type, "generic_prompt.txt")
+    prompt_path = os.path.join(os.path.dirname(__file__), "../prompts", filename)
+
+    try:
+        with open(prompt_path, "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        logger.warning(f"Prompt file {filename} not found, falling back to generic_prompt.txt")
+        fallback_path = os.path.join(os.path.dirname(__file__), "../prompts/generic_prompt.txt")
+        with open(fallback_path, "r", encoding="utf-8") as f:
+            return f.read()
 
 def prepare_smart_context(full_text: str, rule_data: dict, sections: dict, budget: int = DEFAULT_CONTEXT_BUDGET) -> str:
     """Build optimized context for single-pass LLM calls."""
@@ -67,24 +84,26 @@ def prepare_smart_context(full_text: str, rule_data: dict, sections: dict, budge
             context.append(f"\n=== {title} ===\n{content}\n")
     return "".join(context)
 
-async def _run_single_pass(full_text: str, rule_data: dict) -> dict:
-    """Single-pass LLM extraction."""
+async def _run_single_pass(full_text: str, rule_data: dict, portal_type: str = "Generic") -> dict:
+    """Single-pass LLM extraction with portal-specific prompt."""
     optimized = prepare_smart_context(full_text, rule_data, extract_critical_sections(full_text))
-    prompt = load_prompt_template().replace(
+    prompt = load_prompt_template(portal_type).replace(
         "{{SCHEMA_JSON}}", json.dumps(TENDER_SCHEMA, indent=2)
     ).replace(
         "{{RULE_EXTRACTED_DATA}}", json.dumps(rule_data, indent=2)
     ).replace(
         "{{TENDER_TEXT}}", optimized
     )
+    logger.info(f"Running single-pass extraction for {portal_type} portal")
     return _finalize_result(await call_groq_with_retry(prompt))
 
-async def _run_batch_processing(full_text: str, rule_data: dict) -> dict:
-    """Multi-level batching for large documents."""
+async def _run_batch_processing(full_text: str, rule_data: dict, portal_type: str = "Generic") -> dict:
+    """Multi-level batching for large documents with portal awareness."""
     filtered = extract_relevant_lines(full_text)
     if estimate_tokens(filtered) <= SINGLE_PASS_TOKEN_LIMIT:
-        return await _run_single_pass(filtered, rule_data)
+        return await _run_single_pass(filtered, rule_data, portal_type)
 
+    logger.info(f"Running batch processing for {portal_type} portal")
     summaries = await process_micro_batches(chunk_text(filtered), call_groq_with_retry)
     combined = merge_micro_summaries(summaries, rule_data)
     prompt = create_final_prompt(combined, json.dumps(TENDER_SCHEMA, indent=2))
@@ -95,7 +114,7 @@ def _finalize_result(llm_response: str) -> dict:
     return TenderSummary(**validate_json_response(llm_response)).model_dump()
 
 async def process_tender_multi_file(pdf_files: List[UploadFile]) -> dict:
-    """Combined pipeline for single/multi-file processing."""
+    """Combined pipeline for single/multi-file processing with portal detection."""
     try:
         all_docs, combined_text = [], ""
         for idx, f in enumerate(pdf_files):
@@ -105,23 +124,37 @@ async def process_tender_multi_file(pdf_files: List[UploadFile]) -> dict:
             all_docs.append({"filename": f.filename, "content": text})
             combined_text += f"\n\n=== {f.filename} ===\n{text}"
 
+        # Detect portal type FIRST
+        portal_type = detect_portal(combined_text)
+        logger.info(f"Detected portal type: {portal_type}")
+
+        # Extract rule-based fields (now portal-specific via routing)
         rule_data = extract_structured_fields(combined_text)
         tokens = estimate_tokens(combined_text)
 
-        summary = await _run_single_pass(combined_text, rule_data) if tokens <= SINGLE_PASS_TOKEN_LIMIT \
-                  else await _run_batch_processing(combined_text, rule_data)
+        # Process with portal-aware extraction
+        summary = await _run_single_pass(combined_text, rule_data, portal_type) if tokens <= SINGLE_PASS_TOKEN_LIMIT \
+                  else await _run_batch_processing(combined_text, rule_data, portal_type)
 
+        # Gap filling for missing critical fields
         missing = get_missing_field_summary(summary)
         filled = 0
         if missing['critical_missing'] > 0:
+            logger.info(f"Gap filling {missing['critical_missing']} missing critical fields for {portal_type}")
             summary = await fill_missing_fields(summary, all_docs)
             filled = missing['critical_missing'] - get_missing_field_summary(summary)['critical_missing']
 
+        # Run portal-specific validation
+        validation_results = validate_extraction_completeness(summary, portal_type)
+        logger.info(f"Portal validation summary: {validation_results['validation_summary']}")
+
         summary["_metadata"] = {
-            "processing_pipeline": "unified-multi-pass",
+            "processing_pipeline": "portal-specific-multi-pass",
+            "portal_type": portal_type,
             "files_processed": [d["filename"] for d in all_docs],
             "total_tokens": tokens,
-            "fields_filled": filled
+            "fields_filled": filled,
+            "validation": validation_results
         }
         return clean_empty_fields(summary)
     except Exception as e:

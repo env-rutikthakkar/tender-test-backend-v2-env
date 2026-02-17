@@ -52,113 +52,135 @@ def extract_all_dates(text: str) -> List[str]:
         dates.extend(re.findall(PATTERNS[k], text, re.IGNORECASE))
     return list(set(dates))
 
-def extract_gem_pre_qualification(text: str) -> Dict[str, str]:
-    """Extract GeM pre-qualification requirements from structured table."""
-    result = {}
+def detect_portal(text: str) -> str:
+    """
+    Enhanced portal detection with confidence scoring.
+    Returns: "GeM", "CPPP", or "Generic"
+    """
+    gem_score = 0
+    cppp_score = 0
 
-    # Pattern 1: Minimum Average Annual Turnover (Bidder)
-    # Look for: "Minimum Average Annual Turnover of the bidder" on one line, value on next
-    turnover_pattern = r"Minimum\s+Average\s+Annual\s+Turnover\s+of\s+the\s+bidder.*?\n\s*([\d,]+)\s*(?:Lakh|Crore|LAKH|CRORE)?\s*\(s\)?"
-    turnover_match = re.search(turnover_pattern, text, re.IGNORECASE | re.DOTALL)
-    if turnover_match:
-        result["turnover_requirement"] = f"₹{turnover_match.group(1)} Lakh(s)"
+    # GeM indicators with different weights
+    gem_indicators = [
+        ("Government e-Marketplace", 2),
+        ("GeM Portal", 2),
+        ("gem.gov.in", 3),
+        ("GEM/202", 3),  # GEM tender ID pattern
+        ("बिडर का न्यूनतम", 2),  # Hindi text (Bidder minimum)
+        ("मूल उपकरण निर्माता", 2),  # Hindi text (OEM)
+        ("Buyer Added Terms", 2),
+        ("ePBG", 2),
+        ("Pre-Qualification Requirement", 1),
+        ("Document required from seller", 2),
+        ("Item Category", 1),
+        ("Total Quantity", 1),
+    ]
 
-    # Pattern 2: OEM Average Turnover
-    # Look for: "OEM Average Turnover (Last 3 Years)" on one line, value on next
-    oem_pattern = r"OEM\s+Average\s+Turnover.*?\n\s*([\d,]+)\s*(?:Lakh|Crore|LAKH|CRORE)?\s*\(s\)?"
-    oem_match = re.search(oem_pattern, text, re.IGNORECASE | re.DOTALL)
-    if oem_match:
-        result["oem_turnover_requirement"] = f"₹{oem_match.group(1)} Lakh(s)"
+    # CPPP indicators with different weights
+    cppp_indicators = [
+        ("Central Public Procurement Portal", 3),
+        ("CPPP", 3),
+        ("eprocure.gov.in", 3),
+        ("Envelope-1", 2),
+        ("Envelope-2", 2),
+        ("Date & time of issue", 2),
+        ("Due Date & time of Submission", 2),
+        ("Online Submission", 1),
+        ("Offline Submission", 1),
+        ("NIT No", 2),
+        ("Technical Proposal", 1),
+    ]
 
-    # Pattern 3: Years of Past Experience Required
-    # Look for: "Years of Past Experience Required for same/similar service" followed by value like "3 Year (s)"
-    exp_pattern = r"Years?\s+of\s+Past\s+Experience\s+Required.*?\n\s*(\d+)\s*Year\s*\(s\)?"
-    exp_match = re.search(exp_pattern, text, re.IGNORECASE | re.DOTALL)
-    if exp_match:
-        result["experience_required"] = f"{exp_match.group(1)} Year(s)"
+    text_lower = text.lower()
 
-    # Pattern 4: MSE Relaxation
-    # Look for: "MSE Relaxation..." followed by "Yes | Complete" or similar
-    mse_pattern = r"MSE\s+Relaxation\s+for\s+Years.*?\n\s*(Yes|No|Complete|Partial|Exempt)\s*\|\s*(Complete|Partial|Exempt)?"
-    mse_match = re.search(mse_pattern, text, re.IGNORECASE | re.DOTALL)
-    if mse_match:
-        val1 = mse_match.group(1) or ""
-        val2 = mse_match.group(2) or ""
-        if val2:
-            result["mse_relaxation"] = f"{val1} | {val2}"
-        else:
-            result["mse_relaxation"] = val1
+    # Count GeM indicators
+    for indicator, weight in gem_indicators:
+        if indicator.lower() in text_lower:
+            gem_score += weight
 
-    # Pattern 5: Startup Relaxation
-    # Look for: "Startup Relaxation..." followed by value
-    startup_pattern = r"Startup\s+Relaxation\s+for\s+Years.*?\n\s*(Yes|No|Complete|Partial|Exempt)\s*\|\s*(Complete|Partial|Exempt)?"
-    startup_match = re.search(startup_pattern, text, re.IGNORECASE | re.DOTALL)
-    if startup_match:
-        val1 = startup_match.group(1) or ""
-        val2 = startup_match.group(2) or ""
-        if val2:
-            result["startup_relaxation"] = f"{val1} | {val2}"
-        else:
-            result["startup_relaxation"] = val1
+    # Count CPPP indicators
+    for indicator, weight in cppp_indicators:
+        if indicator.lower() in text_lower:
+            cppp_score += weight
 
-    # Pattern 6: Documents Required from Seller (GeM specific)
-    # Capture the full documents section
-    docs_pattern = r"Document\s+required\s+from\s+seller\s*\n\s*(.*?)(?:\n\s*\*|$)"
-    docs_match = re.search(docs_pattern, text, re.IGNORECASE | re.DOTALL)
-    if docs_match:
-        docs_text = docs_match.group(1).strip()
-        # Split by comma and clean
-        docs = [d.strip() for d in docs_text.split(',') if d.strip() and len(d.strip()) > 2]
-        if docs:
-            result["documents_required"] = docs
+    logger.info(f"Portal detection - GeM score: {gem_score}, CPPP score: {cppp_score}")
 
-    return result
+    # Decision logic: need at least 2 points and clear winner
+    if gem_score > cppp_score and gem_score >= 2:
+        return "GeM"
+    elif cppp_score > gem_score and cppp_score >= 2:
+        return "CPPP"
+    else:
+        return "Generic"
 
 def extract_structured_fields(text: str) -> Dict[str, any]:
-    """Extract known fields using regex before LLM processing."""
-    extracted = {}
+    """
+    Extract known fields using regex before LLM processing.
+    Routes to portal-specific extraction based on detected portal type.
+    """
+    # Detect portal first
+    portal = detect_portal(text)
+    logger.info(f"Routing extraction to {portal} extraction logic")
 
-    # ID & Portal
-    tid = extract_field(text, "tender_id_gem") or extract_field(text, "tender_id_generic")
+    # Route to portal-specific extraction
+    if portal == "GeM":
+        from app.services.gem_rules import extract_gem_fields
+        gem_extracted = extract_gem_fields(text)
+        # Add base fields
+        return _extract_base_fields(text, portal, gem_extracted)
+    elif portal == "CPPP":
+        from app.services.cppp_rules import extract_cppp_fields
+        cppp_extracted = extract_cppp_fields(text)
+        # Add base fields
+        return _extract_base_fields(text, portal, cppp_extracted)
+    else:
+        # Generic extraction (fallback)
+        return _extract_base_fields(text, portal, {})
 
-    # Only skip if it's perfectly a date; otherwise, keep it as a potential ID
-    if tid:
-        if not re.match(r"^\d{1,2}[-/\.]\d{1,2}[-/\.]\d{2,4}$", tid):
+def _extract_base_fields(text: str, portal: str, portal_specific: Dict[str, any]) -> Dict[str, any]:
+    """Extract common fields applicable to all portals."""
+    extracted = {"portal": portal}
+    extracted.update(portal_specific)
+
+    # ID (if not already extracted by portal-specific logic)
+    if "tender_id" not in extracted:
+        tid = extract_field(text, "tender_id_gem") or extract_field(text, "tender_id_generic")
+        if tid and not re.match(r"^\d{1,2}[-/\.]\d{1,2}[-/\.]\d{2,4}$", tid):
             extracted["tender_id"] = tid
 
-    if re.search(PATTERNS["portal_gem"], text, re.IGNORECASE): extracted["portal"] = "GeM"
-    elif re.search(PATTERNS["portal_cppp"], text, re.IGNORECASE): extracted["portal"] = "CPPP"
+    # Financials (if not already extracted)
+    if "emd" not in extracted:
+        emd = extract_field(text, "emd_amount")
+        if emd: extracted["emd"] = f"₹{emd}"
 
-    # Financials
-    emd = extract_field(text, "emd_amount")
-    if emd: extracted["emd"] = f"₹{emd}"
-    fee = extract_field(text, "tender_fee")
-    if fee: extracted["tender_fee"] = f"₹{fee}"
+    if "tender_fee" not in extracted:
+        fee = extract_field(text, "tender_fee")
+        if fee: extracted["tender_fee"] = f"₹{fee}"
 
-    # Dates
+    # Dates (common patterns)
     for f in ["bid_start", "bid_end", "tech_opening", "financial_opening"]:
-        val = extract_field(text, f"{f}_date" if "bid" in f else f)
-        if val: extracted[f] = val
+        if f not in extracted:
+            val = extract_field(text, f"{f}_date" if "bid" in f else f)
+            if val: extracted[f] = val
 
-    bval = extract_field(text, "bid_validity_period")
-    if bval: extracted["bid_validity"] = f"{bval} days"
+    if "bid_validity" not in extracted:
+        bval = extract_field(text, "bid_validity_period")
+        if bval: extracted["bid_validity"] = f"{bval} days"
 
-    # Eligibility & Performance
-    turnover = extract_field(text, "turnover")
-    if turnover: extracted["turnover_requirement"] = f"₹{turnover}"
+    # Eligibility & Performance (if not already extracted)
+    if "turnover_requirement" not in extracted:
+        turnover = extract_field(text, "turnover")
+        if turnover: extracted["turnover_requirement"] = f"₹{turnover}"
 
-    exp = extract_field(text, "experience_years")
-    proj = extract_field(text, "similar_projects")
-    if exp or proj:
-        extracted["experience_required"] = " / ".join(filter(None, [f"{exp} years" if exp else None, f"{proj} projects" if proj else None]))
+    if "experience_required" not in extracted:
+        exp = extract_field(text, "experience_years")
+        proj = extract_field(text, "similar_projects")
+        if exp or proj:
+            extracted["experience_required"] = " / ".join(filter(None, [f"{exp} years" if exp else None, f"{proj} projects" if proj else None]))
 
     for k, v in [("msme_exemption", "msme_exemption"), ("startup_exemption", "startup_exemption")]:
-        if re.search(PATTERNS[k], text, re.IGNORECASE): extracted[v] = "Yes"
-
-    # Extract GeM Pre-qualification requirements ONLY FOR GeM PORTALS
-    if re.search(PATTERNS["portal_gem"], text, re.IGNORECASE):
-        gem_prequalif = extract_gem_pre_qualification(text)
-        extracted.update(gem_prequalif)
+        if v not in extracted and re.search(PATTERNS[k], text, re.IGNORECASE):
+            extracted[v] = "Yes"
 
     return extracted
 

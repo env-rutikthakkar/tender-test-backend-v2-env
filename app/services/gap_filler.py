@@ -21,13 +21,14 @@ CRITICAL_FIELDS = {
     ],
     "financial_requirements": [
         "emd", "tender_fee", "performance_security",
-        "payment_terms", "retention_money"
+        "payment_terms", "retention_money", "epbg_details"
     ],
     "tender_meta": [
         "tender_title", "portal", "department",
         "issuing_authority", "tender_id", "country", "state",
         "organization_address", "tender_document_date",
-        "submission_instructions", "boq_title"
+        "submission_instructions", "boq_title", "type_of_bid",
+        "item_category", "total_quantity"
     ],
     "eligibility_snapshot": [
         "turnover_requirement", "experience_required",
@@ -42,13 +43,20 @@ CRITICAL_FIELDS = {
         "duration", "technical_specifications"
     ],
     "legal_and_risk_clauses": [
-        "rejection_of_bid", "splitting_of_work", "liquidated_damages"
+        "rejection_of_bid", "splitting_of_work", "liquidated_damages",
+        "blacklisting_clause", "warranty_period"
     ],
     "additional_important_information": [
-        "detailed_evaluation_scoring_criteria"
+        "detailed_evaluation_scoring_criteria",
+        "evaluation_method", "bid_to_ra_enabled",
+        "technical_clarification_time", "buyer_added_atc"
+    ],
+    "documents_required": [
+        "documents_required", "online_submission_documents",
+        "offline_submission_documents"
     ],
     "root": [
-        "executive_summary"
+        "executive_summary", "pre_qualification_requirement"
     ]
 }
 
@@ -72,7 +80,16 @@ def find_missing_fields(data: dict, parent_key: str = "", path: str = "") -> Lis
         current_path = f"{path}.{key}" if path else key
         if isinstance(value, dict):
             missing.extend(find_missing_fields(value, key, current_path))
-        elif isinstance(value, list): continue
+        elif isinstance(value, list):
+            # Check if list is empty or all items are empty
+            if not value or all(not item for item in value):
+                missing.append({
+                    "section": parent_key or "root",
+                    "field": key,
+                    "path": current_path,
+                    "current_value": value,
+                    "is_critical": _is_critical_field(parent_key, key)
+                })
         elif value in EMPTY_INDICATORS:
             missing.append({
                 "section": parent_key or "root",

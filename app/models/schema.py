@@ -234,6 +234,7 @@ class FinancialRequirements(BaseTenderModel):
     tender_fee: str = Field(default="")
     performance_security: str = Field(default="")
     retention_money: str = Field(default="")
+    epbg_details: str = Field(default="")
     payment_terms: str = Field(default="")
     advance_payment: str = Field(default="")
     mobilization_advance: str = Field(default="")
