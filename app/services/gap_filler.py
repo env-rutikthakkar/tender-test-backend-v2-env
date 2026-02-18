@@ -51,12 +51,9 @@ CRITICAL_FIELDS = {
         "evaluation_method", "bid_to_ra_enabled",
         "technical_clarification_time", "buyer_added_atc"
     ],
-    "documents_required": [
-        "documents_required", "online_submission_documents",
-        "offline_submission_documents"
-    ],
     "root": [
-        "executive_summary", "pre_qualification_requirement"
+        "executive_summary", "pre_qualification_requirement",
+        "documents_required", "offline_submission_documents"
     ]
 }
 

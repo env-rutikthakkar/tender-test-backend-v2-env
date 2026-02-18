@@ -29,6 +29,7 @@ TENDER_SCHEMA = {
         "submission_instructions": "",
         "type_of_bid": "",
         "item_category": "",
+        "relevant_categories": "",
         "total_quantity": "",
         "boq_title": ""
     },
@@ -85,6 +86,7 @@ TENDER_SCHEMA = {
     "documents_required": [],
     "online_submission_documents": [],
     "offline_submission_documents": [],
+    "additional_documentation_notes": "",
     "legal_and_risk_clauses": {
         "blacklisting_clause": "",
         "arbitration_clause": "",
@@ -162,6 +164,7 @@ class TenderMeta(BaseTenderModel):
     submission_instructions: str = Field(default="", description="Specific instructions for bid submission (e.g., envelope labels, offline address)")
     type_of_bid: str = Field(default="", description="Type of bid (e.g., Single Packet, Two Packet)")
     item_category: str = Field(default="", description="Main product category from GeM Bid Document")
+    relevant_categories: str = Field(default="", description="Relevant Categories selected for notification (from GeM document)")
     total_quantity: str = Field(default="", description="Total quantity of items required")
     boq_title: str = Field(default="", description="BOQ Title from GeM document")
 
@@ -220,6 +223,7 @@ class EligibilitySnapshot(BaseTenderModel):
     oem_turnover_requirement: str = Field(default="", description="OEM Average Turnover Requirement")
     mse_relaxation: str = Field(default="", description="MSE Relaxation for Experience/Turnover")
     startup_relaxation: str = Field(default="", description="Startup Relaxation for Experience/Turnover")
+    experience_required_multi_call: str = Field(default="", description="Original CPPP field for multi-call experience criteria")
     detailed_pre_qualification_criteria: str = Field(default="", description="Extended details from Pre-Qualification/Eligibility Criteria section")
 
     @field_validator("*", mode="before")
@@ -256,6 +260,8 @@ class LegalAndRiskClauses(BaseTenderModel):
     special_restrictions: str = Field(default="")
     rejection_of_bid: str = Field(default="", description="Conditions for rejection of bid (See Section 4.6)")
     splitting_of_work: str = Field(default="", description="Whether the organization reserves the right to split the work among bidders")
+    mii_purchase_preference: str = Field(default="")
+    mse_purchase_preference: str = Field(default="")
 
     @field_validator("*", mode="before")
     @classmethod
@@ -302,9 +308,10 @@ class TenderSummary(BaseModel):
     key_dates: KeyDates = Field(default_factory=lambda: KeyDates())
     eligibility_snapshot: EligibilitySnapshot = Field(default_factory=lambda: EligibilitySnapshot())
     financial_requirements: FinancialRequirements = Field(default_factory=lambda: FinancialRequirements())
-    documents_required: List[str] = Field(default_factory=list)
-    online_submission_documents: List[str] = Field(default_factory=list, description="Documents to be submitted ONLINE (scanned/pdf)")
-    offline_submission_documents: List[str] = Field(default_factory=list, description="Documents to be submitted OFFLINE (physical/hardcopy)")
+    documents_required: List[str] = Field(default_factory=list, description="MASTER list of all required documents (Used for GeM)")
+    online_submission_documents: List[str] = Field(default_factory=list, description="Documents for online submission (Used for CPPP)")
+    offline_submission_documents: List[str] = Field(default_factory=list, description="Documents for physical/hardcopy submission")
+    additional_documentation_notes: str = Field(default="", description="Instructions regarding envelopes or submission folders")
     legal_and_risk_clauses: LegalAndRiskClauses = Field(default_factory=lambda: LegalAndRiskClauses())
     vendor_decision_hint: VendorDecisionHint = Field(default_factory=lambda: VendorDecisionHint())
     additional_important_information: AdditionalInformation = Field(default_factory=lambda: AdditionalInformation())
@@ -312,16 +319,16 @@ class TenderSummary(BaseModel):
     executive_summary: str = Field(default="", description="Brief high-level summary of the entire tender")
     external_links: List[str] = Field(default_factory=list, description="All external URLs/Hyperlinks found in the document")
 
-    @field_validator("pre_qualification_requirement", mode="before")
+    @field_validator("pre_qualification_requirement", "additional_documentation_notes", mode="before")
     @classmethod
-    def coerce_prequalification(cls, v: Any) -> str:
+    def coerce_to_str(cls, v: Any) -> str:
         return coerce_to_string(v)
 
     @field_validator("documents_required", "online_submission_documents", "offline_submission_documents", mode="before")
     @classmethod
-    def coerce_documents_required(cls, v: Any) -> List[str]:
+    def coerce_to_list(cls, v: Any) -> List[str]:
         if isinstance(v, str):
-            return [v]
+            return [v] if v.lower() not in ["not found", "n/a", "none"] else []
         if isinstance(v, list):
-            return [str(i) for i in v]
+            return [str(i) for i in v if str(i).lower() not in ["not found", "n/a", "none"]]
         return []

@@ -38,6 +38,23 @@ def format_tender_response(tender_data: Dict[str, Any]) -> Dict[str, Any]:
     if pre_qual:
         formatted["_metadata"]["pre_qualification_requirement"] = pre_qual
 
+    # DE-DUPLICATION LOGIC: Remove items from online_list that are already in master_list
+    master_list = formatted.get("documents_required", [])
+    online_list = formatted.get("online_submission_documents", [])
+
+    if isinstance(master_list, list) and isinstance(online_list, list) and master_list and online_list:
+        master_set = set([d.lower().strip() for d in master_list])
+
+        # Keep only items in online_list that aren't already represented in master_list
+        unique_online = [d for d in online_list if d.lower().strip() not in master_set]
+
+        # If no unique items remain, clear the list to hide the section in the UI
+        if not unique_online:
+            formatted["online_submission_documents"] = []
+            logger.info("De-duplicated documentation: online list was a subset of master list")
+        else:
+            formatted["online_submission_documents"] = unique_online
+
     return formatted
 
 def _create_eligibility_summary(snapshot: Dict[str, Any]) -> str:

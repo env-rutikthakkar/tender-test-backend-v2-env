@@ -14,6 +14,7 @@ GEM_PATTERNS = {
     "tender_id": r"GEM/\d{4}/[A-Z]/\d+",
     "boq_title": r"(?:BOQ|Bill\s+of\s+Quantities)\s*[:\-]?\s*(.+?)(?:\n|$)",
     "item_category": r"(?:Item\s+Category|Product\s+Category)\s*[:\-]?\s*(.+?)(?:\n|$)",
+    "relevant_categories": r"(?:Relevant\s+Categories\s+selected\s+for\s+notification|अधिसूचना\s+के\s+लिए\s+चयनित\s+प्रासंगिक\s+श्रेणियाँ)\s*[:\-]?\s*(.*?)(?=\n[^\s•\d]|\Z)",
     "total_quantity": r"(?:Total\s+Quantity|Total\s+Qty\.?|Qty\.?)\s*[:\-]?\s*(\d+(?:[,.\d]+)?)",
     "type_of_bid": r"(?:Single|Two)[\s-]*(?:Packet|Part)\s+Bid",
     "epbg_percentage": r"ePBG\s*[:\-]?\s*(\d+%)",
@@ -52,6 +53,13 @@ def extract_gem_boq_info(text: str) -> Dict[str, Optional[str]]:
     category_match = re.search(GEM_PATTERNS["item_category"], text, re.IGNORECASE)
     if category_match:
         result["item_category"] = category_match.group(1).strip()
+
+    rel_cat_match = re.search(GEM_PATTERNS["relevant_categories"], text, re.IGNORECASE | re.DOTALL)
+    if rel_cat_match:
+        raw_cats = rel_cat_match.group(1).strip()
+        # Clean up bullets and newlines
+        cats = [c.strip() for c in re.split(r'[\n•\-\*]', raw_cats) if c.strip()]
+        result["relevant_categories"] = "; ".join(cats)
 
     qty_match = re.search(GEM_PATTERNS["total_quantity"], text, re.IGNORECASE)
     if qty_match:
@@ -168,7 +176,8 @@ def extract_gem_pre_qualification_table(text: str) -> Dict[str, any]:
             docs_text = docs_match.group(1).strip()
             docs = [d.strip() for d in re.split(r'[,•\n]', docs_text) if d.strip() and len(d.strip()) > 2]
             if docs:
-                result["documents_required"] = docs
+                if "documentation" not in result: result["documentation"] = {}
+                result["documentation"]["checklist"] = docs
             break
 
     return result

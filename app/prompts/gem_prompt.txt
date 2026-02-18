@@ -55,6 +55,7 @@ INFORMATION CATEGORIES TO EXTRACT
 - Tender title/Item description
 - Department/Organization
 - Item category (from BoQ)
+- **Relevant Categories**: Look for "Relevant Categories selected for notification" / "अधिसूचना के लिए चयनित प्रासंगिक श्रेणियाँ" and extract all items listed.
 - Total quantity required
 - BoQ Title
 - Portal: "GeM" (already identified)
@@ -149,18 +150,13 @@ Populate this SINGLE formatted string combining all pre-qual data:
 - Scoring/weightage (if applicable)
 - Reverse auction rules (if RA enabled)
 
-### 8. DOCUMENTS REQUIRED
+### 8. DOCUMENTATION (GeM CHECKLIST)
 **CRITICAL FOR GEM - EXTRACT ONLY FROM PRE-QUALIFICATION TABLE:**
-Extract ONLY from "Document required from seller" row:
-- Experience Criteria
-- Past Performance
-- Bidder Turnover
-- Certificate (Requested in ATC)
-- OEM Authorization Certificate
-- OEM Annual Turnover
-- Compliance of BoQ specification and supporting document
+Extract ONLY from "Document required from seller" row and populate:
+- **documents_required**: MASTER array of all documents mentioned (Experience, Past Performance, Turnover, certificates, OEM auth, Compliance docs).
+- **additional_documentation_notes**: Include the asterisk (*) note from the document required from seller row.
 
-**DO NOT** include documents from ATC section or other areas for GeM.
+**DO NOT** include documents from ATC section or other areas for GeM unless they are critical missing pieces.
 
 ### 9. TERMS & CONDITIONS
 - Delivery terms and conditions
@@ -212,9 +208,9 @@ You MUST output a valid JSON object matching this EXACT schema:
 **CRITICAL JSON RULES FOR GEM:**
 1. `pre_qualification_requirement`: MUST be a single formatted string combining all pre-qual fields with " | " separator
 2. `turnover_requirement`, `oem_turnover_requirement`, `experience_required`, `mse_relaxation`, `startup_relaxation`: Extract from First Page Table EXACTLY
-3. `documents_required`: Array of documents from "Document required from seller" row - include asterisk note in the description
-4. `type_of_bid`, `item_category`, `total_quantity`, `boq_title`: GeM-specific fields MUST be populated
-5. `epbg_details`, `evaluation_method`, `bid_to_ra_enabled`, `technical_clarification_time`, `buyer_added_atc`: GeM-specific, extract if present
+3. `documents_required`: Array of documents from "Document required from seller" row
+4. `additional_documentation_notes`: Include the asterisk note from the document table
+5. `type_of_bid`, `item_category`, `total_quantity`, `boq_title`: GeM-specific fields MUST be populated
 6. All string values MUST have actual text or "Not Found"
 7. For "Not Found" - only use when you've searched everywhere and truly cannot find it
 8. Arrays should contain ALL items found (don't limit)
@@ -227,10 +223,9 @@ You MUST output a valid JSON object matching this EXACT schema:
 - ✓ First Page Table extracted (pre-qual data)
 - ✓ pre_qualification_requirement populated as single formatted string
 - ✓ All 5 pre-qual fields (turnover, OEM, experience, MSE, startup) extracted
-- ✓ Documents ONLY from pre-qual table row
+- ✓ documents_required contains only documents from pre-qual row
 - ✓ GeM-specific fields present (type_of_bid, item_category, total_quantity, boq_title)
 - ✓ ePBG, evaluation_method, bid_to_ra, tech clarification, ATC extracted if present
-- ✓ All critical dates with time if available
 - ✓ No documents from ATC section
 
 ====================

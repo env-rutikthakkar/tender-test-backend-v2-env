@@ -19,12 +19,6 @@ CPPP_PATTERNS = {
 def extract_cppp_tender_id(text: str) -> Optional[str]:
     """
     Extract CPPP-format tender ID from document text.
-
-    Args:
-        text (str): Document text.
-
-    Returns:
-        Optional[str]: Extracted ID or None if not found or if it looks like a date.
     """
     match = re.search(CPPP_PATTERNS["tender_id"], text, re.IGNORECASE)
     if match:
@@ -36,12 +30,6 @@ def extract_cppp_tender_id(text: str) -> Optional[str]:
 def extract_cppp_date_fields(text: str) -> Dict[str, Optional[str]]:
     """
     Extract CPPP-specific date fields (Issue date, Submission date).
-
-    Args:
-        text (str): Document text.
-
-    Returns:
-        Dict[str, Optional[str]]: Dictionary with date_and_time_of_issue and due_date_and_time_of_submission.
     """
     result = {}
 
@@ -58,12 +46,6 @@ def extract_cppp_date_fields(text: str) -> Dict[str, Optional[str]]:
 def extract_cppp_envelope_documents(text: str) -> Dict[str, List[str]]:
     """
     Extract document requirements grouped by submission envelope.
-
-    Args:
-        text (str): Document text.
-
-    Returns:
-        Dict[str, List[str]]: Mapping of submission type to list of document names.
     """
     result = {
         "online_submission_documents": [],
@@ -93,12 +75,6 @@ def extract_cppp_envelope_documents(text: str) -> Dict[str, List[str]]:
 def extract_document_list(text: str) -> List[str]:
     """
     Helper to extract a list of documents from a text block.
-
-    Args:
-        text (str): Block of text containing document names.
-
-    Returns:
-        List[str]: List of cleaned document names.
     """
     documents = []
     patterns = [r"^\s*[-•]\s*(.+?)$", r"^\s*\d+\.\s*(.+?)$", r"^([A-Z][^:\n]*?)(?:\s*[-:]\s*(.+))?$"]
@@ -120,12 +96,6 @@ def extract_document_list(text: str) -> List[str]:
 def extract_cppp_multi_call_experience(text: str) -> Optional[str]:
     """
     Extract multi-call experience criteria (e.g., criteria for 1st vs 2nd call).
-
-    Args:
-        text (str): Document text.
-
-    Returns:
-        Optional[str]: Extracted criteria or None.
     """
     patterns = [
         r"Experience\s+(?:Requirement|Criteria).*?(?:1st|First|Call\s+1).*?([\d\s\w\.]+?)(?:(?:2nd|Second|Call\s+2)|$)",
@@ -141,12 +111,6 @@ def extract_cppp_multi_call_experience(text: str) -> Optional[str]:
 def extract_cppp_bidder_infrastructure(text: str) -> Dict[str, Optional[str]]:
     """
     Extract bidder technical requirements (Computer, Broadband, DSC).
-
-    Args:
-        text (str): Document text.
-
-    Returns:
-        Dict[str, Optional[str]]: Mapping of requirement type to value.
     """
     result = {}
     pats = {
@@ -164,12 +128,6 @@ def extract_cppp_bidder_infrastructure(text: str) -> Dict[str, Optional[str]]:
 def extract_cppp_right_to_reject(text: str) -> Optional[str]:
     """
     Detect if the 'Right to Reject' clause is present.
-
-    Args:
-        text (str): Document text.
-
-    Returns:
-        Optional[str]: 'Yes' if found else None.
     """
     patterns = [
         r"Right\s+to\s+Reject\s+(?:Bid|Bids)\s+(?:without\s+)?(?:Reason|Assigning\s+Reason)",
@@ -182,12 +140,6 @@ def extract_cppp_right_to_reject(text: str) -> Optional[str]:
 def extract_cppp_split_work(text: str) -> Optional[str]:
     """
     Detect if the 'Right to Split Work' clause is present.
-
-    Args:
-        text (str): Document text.
-
-    Returns:
-        Optional[str]: 'Yes' if found else None.
     """
     patterns = [r"Right\s+to\s+Split\s+(?:Tender|Work|Project)", r"Work\s+may\s+be\s+split\s+(?:among|between)", r"Splitting\s+(?:of\s+)?(?:Tender|Work)"]
     for pattern in patterns:
@@ -197,12 +149,6 @@ def extract_cppp_split_work(text: str) -> Optional[str]:
 def extract_cppp_fields(text: str) -> Dict[str, any]:
     """
     Main entry point for CPPP-specific extraction.
-
-    Args:
-        text (str): Document text.
-
-    Returns:
-        Dict[str, any]: Comprehensive dictionary of extracted CPPP fields.
     """
     extracted = {}
 

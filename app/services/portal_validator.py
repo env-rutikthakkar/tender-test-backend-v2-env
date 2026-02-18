@@ -15,15 +15,15 @@ GEM_REQUIRED_FIELDS = {
     "eligibility_snapshot": ["turnover_requirement", "oem_turnover_requirement", "experience_required"],
     "financial_requirements": ["epbg_details"],
     "additional_important_information": ["evaluation_method", "bid_to_ra_enabled", "technical_clarification_time", "buyer_added_atc"],
-    "root": ["pre_qualification_requirement"]
+    "root": ["documents_required", "pre_qualification_requirement"]
 }
 
 # CPPP-required fields configuration
 CPPP_REQUIRED_FIELDS = {
     "tender_meta": ["tender_id", "tender_title", "portal"],
     "key_dates": ["date_and_time_of_issue", "due_date_and_time_of_submission"],
-    "documents_required": ["online_submission_documents", "offline_submission_documents"],
     "eligibility_snapshot": ["bidder_technical_infrastructure"],
+    "root": ["online_submission_documents"]
 }
 
 EMPTY_INDICATORS = ["not found", "not mentioned", "not specified", "n/a", "", None]
@@ -66,11 +66,6 @@ def validate_gem_fields(data: Dict[str, Any]) -> Dict[str, Any]:
     if is_field_empty(data.get("pre_qualification_requirement")):
         result["warnings"].append("pre_qualification_requirement is empty - GeM tenders MUST have this")
 
-    # Access documents_required as it is a top-level list in the current schema
-    docs = data.get("documents_required", [])
-    if not docs:
-        result["warnings"].append("documents_required is empty - should contain pre-qual documents")
-
     return result
 
 def validate_cppp_fields(data: Dict[str, Any]) -> Dict[str, Any]:
@@ -87,11 +82,9 @@ def validate_cppp_fields(data: Dict[str, Any]) -> Dict[str, Any]:
                 result["missing_fields"].append(f"{section}.{field}")
                 result["is_valid"] = False
 
-    # Check top-level lists for CPPP
+    # CPPP-specific warnings
     if not data.get("online_submission_documents"):
-        result["warnings"].append("online_submission_documents is empty - CPPP tenders must separate online docs")
-    if not data.get("offline_submission_documents"):
-        result["warnings"].append("offline_submission_documents is empty - check if physical submission is required")
+        result["warnings"].append("online_submission_documents is empty - critical for CPPP")
 
     return result
 
